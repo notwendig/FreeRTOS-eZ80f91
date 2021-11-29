@@ -34,7 +34,10 @@ const char *hostname = "nadiez80";
 //void vStartTCPCommandInterpreterTask( uint16_t usStackSize, uint32_t ulPort, UBaseType_t uxPriority );
 void vStartUDPCommandInterpreterTask( uint16_t usStackSize, uint32_t ulPort, UBaseType_t uxPriority );
 void vRegisterCLICommands( void );
+
 void loadcpm(char *mem);
+extern uint8_t *cpmram;
+extern uint8_t COLD;
 
 TaskHandle_t hndlA,hndlB,hndlC,hndlD,hndlCPM;
 uint8_t volatile last=sizeof(size_t);
@@ -115,7 +118,6 @@ void TaskLED( void *pvParameters )
 int main(int argc, void *argv[])
 {
 	BaseType_t res;
-	uint8_t *cpmram;
 	
 	portSetup();
 	
@@ -142,8 +144,7 @@ int main(int argc, void *argv[])
 
 	res = xTaskCreate(StressThread, "StressThreadA", 2048, (void*)5, 3, &hndlC);
 	res = xTaskCreate(StressThread, "StressThreadB", 2048, (void*)14, 3, &hndlD);
-	cpmram = pvPortMalloc64k();
-	res = xTaskCreate(prvTCPCpmIOTask,"CPM22",2048,cpmram,4,&hndlCPM);
+	res = xTaskCreate(prvTCPCpmIOTask,"CPM22",2048,0/*cpmram*/,4,&hndlCPM);
 
 	vTaskStartScheduler();
  

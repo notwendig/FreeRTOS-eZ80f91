@@ -1,12 +1,8 @@
 	include CPM.INC
 
-if _EZ80F91 
-	DEFINE  BIOSSEG,SPACE=RAM,ORG=BIOS
-	SEGMENT BIOSSEG
+	SEGMENT CPM22
 	.assume adl=0
-else
 	ORG	BIOS
-endif
 	
 		GLOBAL BOOT 	;cold start
 		GLOBAL WBOOT 	;warm start
@@ -407,6 +403,7 @@ CHK03:	DS	16		;check vector 3
 CHKHD8:	DS	1		;check vector harddisk 8 I
 CHKHD9:	DS	1		;check vector harddisk 9 J
 ;
+	blkb FFFFh-FFD5h,FFh  
 EDAT:	EQU	$		;end of data area
 	
 	END	;of BIOS

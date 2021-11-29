@@ -18,14 +18,11 @@
 HeapRegion_t xHeapRegions[] =
 {
   { 0, 0 }, 
+#ifdef _DEBUG  
   { ( uint8_t * ) 0xB90000, 0x80000 }, 
+#endif  
   { NULL, 0 }
 };
-
-uint8_t *pvPortMalloc64k()
-{
-	return (uint8_t*) 0xB80000;
-}
 
 void portSetup()
 {

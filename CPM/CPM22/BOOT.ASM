@@ -3,15 +3,12 @@
 SIZE:    EQU     (10000h-CCP)  	; size of cp/m system
 SECTS:   EQU     32h			;(SIZE / 128)   ; # of sectors to load
 
-if _EZ80F91
-	DEFINE  BOOTSEG,SPACE=RAM,ORG=0
-	SEGMENT BOOTSEG
+	SEGMENT CPM22
 	.assume adl=0
-else
-	org 0
-endif
-		
-COLD:	LD		SP,128
+	ORG	CCP-128
+	
+	xref _COLD
+_COLD:	LD		SP,_COLD
 		LD		HL,bootmsg
 BMSG:	LD		A,(HL)
 		OR		A

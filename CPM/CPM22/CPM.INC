@@ -1,4 +1,4 @@
-;	CBIOS for eZ80 Z80-Mixed-Mode 
+;	CBIOS for eZ80 Z80-Mixed-Mode
 ;
 ;	Copyright (C) 1998-2021 by Juergen Sievers
 ;
@@ -27,7 +27,7 @@ PRTDAT:	EQU	04h		;printer data port
 AUXDAT:	EQU	05h		;auxiliary data port
 
 FDIO:	EQU 32h		; FLOPPY Device
-FDCD:	EQU	01h		;fdc-port: # of drive in A. 0 = A, 1 = B ... HL points to DPH 
+FDCD:	EQU	01h		;fdc-port: # of drive in A. 0 = A, 1 = B ... HL points to DPH
 FDCTBC:	EQU	02h		;fdc-port: # of track in BC
 FDCSBC:	EQU	03h		;fdc-port: # of sector in BC
 FDCOP:	EQU	04h		;fdc-port: command	A == 0 write, 1 read
@@ -39,7 +39,7 @@ DMABC:	EQU	01h		;dma-port: dma address BC
 ROMBOOT:EQU	34h		; boot buildin CP/M 2.2
 
 PORTOUT:EQU	0
-PORTINP:EQU	1	
+PORTINP:EQU	1
 
 ; Execute ADL=1 mode code from ADL=0 mode (plain Z80-mode) code by casing a trap exception.
 ; Macro to tram ez80f91 on z80 mixed mode
@@ -74,6 +74,7 @@ TFCB	EQU	5CH		;default file control block.
 TBUFF	EQU	80H		;i/o buffer and command line storage.
 TBASE	EQU	100H		;transiant program storage area.
 
+    define CPM22,space=ROM
 SERIALNO macro
 		db	0,22,0,0,0,0
 		endmac
