@@ -7,7 +7,7 @@
 
 #ifndef INCLUDE_PORTMACRO_H_
 #define INCLUDE_PORTMACRO_H_
-
+#include <stdint.h>
 #include <limits.h>
 #include "portable.h"
 
