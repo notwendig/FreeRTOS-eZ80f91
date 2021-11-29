@@ -1,0 +1,186 @@
+diff --git a/FreeRTOS-Plus-TCP/FreeRTOS_ARP.c b/FreeRTOS-Plus-TCP/FreeRTOS_ARP.c
+index debda85..b1234c9 100644
+--- a/FreeRTOS-Plus-TCP/FreeRTOS_ARP.c
++++ b/FreeRTOS-Plus-TCP/FreeRTOS_ARP.c
+@@ -190,7 +190,9 @@ eFrameProcessingResult_t eARPProcessPacket( ARPPacket_t * const pxARPFrame )
+             iptraceDROPPED_INVALID_ARP_PACKET( pxARPHeader );
+             break;
+         }
+-
++#ifdef __ACCLAIM__
++{
++#endif
+         uint32_t ulHostEndianProtocolAddr = FreeRTOS_ntohl( ulSenderProtocolAddress );
+ 
+         if( ( ipFIRST_LOOPBACK_IPv4 <= ulHostEndianProtocolAddr ) &&
+@@ -201,6 +203,9 @@ eFrameProcessingResult_t eARPProcessPacket( ARPPacket_t * const pxARPFrame )
+             iptraceDROPPED_INVALID_ARP_PACKET( pxARPHeader );
+             break;
+         }
++#ifdef __ACCLAIM__
++}
++#endif
+ 
+         /* Check whether there is a clash with another device for this IP address. */
+         if( ( ulSenderProtocolAddress == *ipLOCAL_IP_ADDRESS_POINTER ) &&
+diff --git a/FreeRTOS-Plus-TCP/FreeRTOS_IP.c b/FreeRTOS-Plus-TCP/FreeRTOS_IP.c
+index 8321d04..5e9fb8d 100644
+--- a/FreeRTOS-Plus-TCP/FreeRTOS_IP.c
++++ b/FreeRTOS-Plus-TCP/FreeRTOS_IP.c
+@@ -1113,7 +1113,11 @@ static NetworkBufferDescriptor_t * prvPacketBuffer_to_NetworkBuffer( const void
+ 
+         /* Here a pointer was placed to the network descriptor.  As a
+          * pointer is dereferenced, make sure it is well aligned. */
++#ifdef __ACCLAIM__
++		if( 1 )
++#else
+         if( ( uxBuffer & ( ( ( uintptr_t ) sizeof( uxBuffer ) ) - 1U ) ) == ( uintptr_t ) 0U )
++#endif			
+         {
+             /* The following statement may trigger a:
+              * warning: cast increases required alignment of target type [-Wcast-align].
+@@ -1429,9 +1433,14 @@ void FreeRTOS_SetAddressConfiguration( const uint32_t * pulIPAddress,
+         size_t uxTotalLength;
+         IPStackEvent_t xStackTxEvent = { eStackTxEvent, NULL };
+ 
++#ifdef __ACCLAIM__
++        BaseType_t xEnoughSpace;
++        uxTotalLength = uxNumberOfBytesToSend + sizeof( ICMPPacket_t );
++#else
+         uxTotalLength = uxNumberOfBytesToSend + sizeof( ICMPPacket_t );
+         BaseType_t xEnoughSpace;
+ 
++#endif
+         if( uxNumberOfBytesToSend < ( ipconfigNETWORK_MTU - ( sizeof( IPHeader_t ) + sizeof( ICMPHeader_t ) ) ) )
+         {
+             xEnoughSpace = pdTRUE;
+diff --git a/FreeRTOS-Plus-TCP/FreeRTOS_TCP_IP.c b/FreeRTOS-Plus-TCP/FreeRTOS_TCP_IP.c
+index 06d5931..cccc55f 100644
+--- a/FreeRTOS-Plus-TCP/FreeRTOS_TCP_IP.c
++++ b/FreeRTOS-Plus-TCP/FreeRTOS_TCP_IP.c
+@@ -1428,6 +1428,9 @@
+         TCPWindow_t * pxTCPWindow = &( pxSocket->u.xTCP.xTCPWindow );
+         BaseType_t xReturn = pdFALSE;
+ 
++#ifdef __ACCLAIM__
++        lIndex = 0U;
++#endif
+         if( pucPtr[ 0U ] == tcpTCP_OPT_END )
+         {
+             /* End of options. */
+@@ -3571,6 +3574,9 @@
+ 
+         configASSERT( pxNetworkBuffer != NULL );
+         configASSERT( pxNetworkBuffer->pucEthernetBuffer != NULL );
++#ifdef __ACCLAIM__
++{
++#endif
+         const IPHeader_t * pxIPHeader;
+ 
+         /* Check for a minimum packet size. */
+@@ -3788,7 +3794,9 @@
+                 }
+             }
+         }
+-
++#ifdef __ACCLAIM__
++}
++#endif
+         /* pdPASS being returned means the buffer has been consumed. */
+         return xResult;
+     }
+diff --git a/FreeRTOS-Plus-TCP/FreeRTOS_UDP_IP.c b/FreeRTOS-Plus-TCP/FreeRTOS_UDP_IP.c
+index 1d15fda..0301175 100644
+--- a/FreeRTOS-Plus-TCP/FreeRTOS_UDP_IP.c
++++ b/FreeRTOS-Plus-TCP/FreeRTOS_UDP_IP.c
+@@ -307,6 +307,9 @@ BaseType_t xProcessReceivedUDPPacket( NetworkBufferDescriptor_t * pxNetworkBuffe
+     configASSERT( pxNetworkBuffer != NULL );
+     configASSERT( pxNetworkBuffer->pucEthernetBuffer != NULL );
+ 
++#ifdef __ACCLAIM__
++{
++#endif
+     /* Map the ethernet buffer to the UDPPacket_t struct for easy access to the fields. */
+     const UDPPacket_t * pxUDPPacket = ipCAST_CONST_PTR_TO_CONST_TYPE_PTR( UDPPacket_t, pxNetworkBuffer->pucEthernetBuffer );
+ 
+@@ -475,8 +478,11 @@ BaseType_t xProcessReceivedUDPPacket( NetworkBufferDescriptor_t * pxNetworkBuffe
+                 xReturn = pdFAIL;
+             }
+         }
+-    } while( ipFALSE_BOOL );
+ 
++    } while( ipFALSE_BOOL );
++#ifdef __ACCLAIM__
++}
++#endif
+     return xReturn;
+ }
+ /*-----------------------------------------------------------*/
+diff --git a/FreeRTOS-Plus-TCP/portable/BufferManagement/BufferAllocation_2.c b/FreeRTOS-Plus-TCP/portable/BufferManagement/BufferAllocation_2.c
+index b064bbf..34560ae 100644
+--- a/FreeRTOS-Plus-TCP/portable/BufferManagement/BufferAllocation_2.c
++++ b/FreeRTOS-Plus-TCP/portable/BufferManagement/BufferAllocation_2.c
+@@ -68,8 +68,10 @@
+     #define STATIC_ASSERT( e ) \
+     ; enum { ASSERT_CONCAT( assert_line_, __LINE__ ) = 1 / ( !!( e ) ) }
+ 
++#ifndef __ACCLAIM__
+     STATIC_ASSERT( ipconfigETHERNET_MINIMUM_PACKET_BYTES <= baMINIMAL_BUFFER_SIZE );
+ #endif
++#endif
+ 
+ /* A list of free (available) NetworkBufferDescriptor_t structures. */
+ static List_t xFreeBuffersList;
+diff --git a/Source/tasks.c b/Source/tasks.c
+index eff0eff0d..593b296ec 100644
+--- a/Source/tasks.c
++++ b/Source/tasks.c
+@@ -241,11 +241,15 @@
+  * the scheduler that the value should not be changed - in which case it is the
+  * responsibility of whichever module is using the value to ensure it gets set back
+  * to its original value when it is released. */
++#ifdef __ACCLAIM__
++    #define taskEVENT_LIST_ITEM_VALUE_IN_USE    0x800000U
++#else
+ #if ( configUSE_16_BIT_TICKS == 1 )
+     #define taskEVENT_LIST_ITEM_VALUE_IN_USE    0x8000U
+ #else
+     #define taskEVENT_LIST_ITEM_VALUE_IN_USE    0x80000000UL
+ #endif
++#endif
+ 
+ /*
+  * Task control block.  A task control block (TCB) is allocated for each task,
+@@ -2082,6 +2086,7 @@ void vTaskStartScheduler( void )
+         configASSERT( xReturn != errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY );
+     }
+ 
++#ifndef __ACCLAIM__
+     /* Prevent compiler warnings if INCLUDE_xTaskGetIdleTaskHandle is set to 0,
+      * meaning xIdleTaskHandle is not used anywhere else. */
+     ( void ) xIdleTaskHandle;
+@@ -2089,6 +2094,7 @@ void vTaskStartScheduler( void )
+     /* OpenOCD makes use of uxTopUsedPriority for thread debugging. Prevent uxTopUsedPriority
+      * from getting optimized out as it is no longer used by the kernel. */
+     ( void ) uxTopUsedPriority;
++#endif
+ }
+ /*-----------------------------------------------------------*/
+ 
+diff --git a/Source/timers.c b/Source/timers.c
+index 46e6d4851..88e6ff924 100644
+--- a/Source/timers.c
++++ b/Source/timers.c
+@@ -944,8 +944,12 @@
+                         /* The timer queue is allocated statically in case
+                          * configSUPPORT_DYNAMIC_ALLOCATION is 0. */
+                         PRIVILEGED_DATA static StaticQueue_t xStaticTimerQueue;                                                                          /*lint !e956 Ok to declare in this manner to prevent additional conditional compilation guards in other locations. */
++#ifdef __ACCLAIM__
++                        PRIVILEGED_DATA static uint8_t ucStaticTimerQueueStorage[ configTIMER_QUEUE_LENGTH * sizeof( DaemonTaskMessage_t ) ]; /*lint !e956 Ok to declare in this manner to prevent additional conditional compilation guards in other locations. */
++#else
+                         PRIVILEGED_DATA static uint8_t ucStaticTimerQueueStorage[ ( size_t ) configTIMER_QUEUE_LENGTH * sizeof( DaemonTaskMessage_t ) ]; /*lint !e956 Ok to declare in this manner to prevent additional conditional compilation guards in other locations. */
+ 
++#endif
+                         xTimerQueue = xQueueCreateStatic( ( UBaseType_t ) configTIMER_QUEUE_LENGTH, ( UBaseType_t ) sizeof( DaemonTaskMessage_t ), &( ucStaticTimerQueueStorage[ 0 ] ), &xStaticTimerQueue );
+                     }
+                 #else
