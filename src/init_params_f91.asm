@@ -54,7 +54,8 @@
 __init:	
     ; disable internal peripheral interrupt sources
     ; -- this will help during a RAM debug session --
-    ld a, %FF
+
+	ld a, %FF
     out0 (PA_DDR), a         ; GPIO
     out0 (PB_DDR), a         ;
     out0 (PC_DDR), a         ;
@@ -134,7 +135,7 @@ __init:
     out0 (RAM_CTL), a
 
     ; setup Stack Pointer
-    ld sp,80000h;#(__RAM_ADDR_U_INIT_PARAM << 16) + d000h +1
+    ld sp,__stack 
     ; initialize the interrupt vector table
     call __init_default_vectors
 

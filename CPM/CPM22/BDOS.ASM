@@ -1,12 +1,9 @@
 	include CPM.INC
 
-if _EZ80F91
-	DEFINE  BDOSSEG,SPACE=RAM,ORG=BDOS-6
-	SEGMENT BDOSSEG
+	SEGMENT CPM22
 	.assume adl=0
-else
 	ORG	BDOS-6
-endif
+
 ;
 ;   Note that the following six bytes must match those at
 ; (PATTRN1) or cp/m will HALT. Why?

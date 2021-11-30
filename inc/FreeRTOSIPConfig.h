@@ -78,6 +78,7 @@
 
 #ifndef FREERTOS_IP_CONFIG_H
 #define FREERTOS_IP_CONFIG_H
+#include "stdint.h"
 #include "Stdio.h"
 #include "String.h"
 #include "printf.h"
@@ -88,6 +89,9 @@
 #define MONITOR_PORT	4060
 
 #define NTP_PORT		123
+
+uint32_t portFreeRTOS_htonl( uint32_t ulIn );
+uint16_t portFreeRTOS_htons( uint16_t usIn );
 
 /* Prototype for the function used to print out.  In this case it prints to the
 console before the network is connected then a UDP port after the network has
@@ -118,8 +122,6 @@ on).  Valid options are pdFREERTOS_BIG_ENDIAN and pdFREERTOS_LITTLE_ENDIAN. */
 #if __ACCLAIM__	/* ZiLOG's C-Compiler can not handle the existing macros */
 #define	FreeRTOS_htonl(x) portFreeRTOS_htonl(x)
 #define FreeRTOS_htons(x) portFreeRTOS_htons(x)
-uint32_t portFreeRTOS_htonl( uint32_t ulIn );
-uint16_t portFreeRTOS_htons( uint16_t usIn );
 #endif
 
 

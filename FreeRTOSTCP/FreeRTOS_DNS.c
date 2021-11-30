@@ -1405,7 +1405,7 @@
 
                                         ( void ) FreeRTOS_inet_ntop( FREERTOS_AF_INET, ( const void * ) &( ulIPAddress ), cBuffer, sizeof( cBuffer ) );
                                         /* Show what has happened. */
-                                        FreeRTOS_printf( ( "DNS[0x%04lX]: The answer to '%s' (%s) will%s be stored\n",
+                                        FreeRTOS_printf( ( "DNS[0x%04X]: The answer to '%s' (%s) will%s be stored\n",
                                                            ( UBaseType_t ) pxDNSMessageHeader->usIdentifier,
                                                            pcName,
                                                            cBuffer,

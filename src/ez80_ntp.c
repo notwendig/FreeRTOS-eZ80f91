@@ -30,12 +30,13 @@ enum EStatus {
 //static struct SNtpPacket* xNTPPacket;
 
 static char cRecvBuffer[ sizeof( struct SNtpPacket ) + 64 ];
-
+ 
 static enum EStatus xStatus = EStatusLookup;
 
 static const char *pcTimeServers[] = {
-	"nadibox",
-	"192.168.77.1"
+	"ptbtime1.ptb.de",
+	"ptbtime2.ptb.de",
+	"ptbtime3.ptb.de"
 };
 
 static SemaphoreHandle_t xNTPWakeupSem = NULL;
@@ -304,7 +305,7 @@ static void prvNTPTask( void *pvParameters )
 			if(ulIPAddressFound == 0ul)
 				break;
 			xStatus = EStatusAsking;
-			
+			 
 		case EStatusAsking:
 			{
 				
