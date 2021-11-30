@@ -874,7 +874,7 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
         created. */
         if( xTasksAlreadyCreated == pdFALSE )
         {
-            /*
+               /*
              * Create the tasks here.
              */
 
@@ -889,16 +889,16 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
                                           &ulDNSServerAddress );
 
         /* Convert the IP address to a string then print it out. */
-        FreeRTOS_debug_printf(( "IP Address: %xip\n", ulIPAddress ));
+        FreeRTOS_debug_printf(( "IP Address:            %lxip\n", FreeRTOS_htonl(ulIPAddress )));
 
         /* Convert the net mask to a string then print it out. */
-        FreeRTOS_debug_printf(( "Subnet Mask: %xip\n", ulIPAddress ));
+        FreeRTOS_debug_printf(( "Subnet Mask:           %lxip\n", FreeRTOS_htonl(ulNetMask )));
 
         /* Convert the IP address of the gateway to a string then print it out. */
-        FreeRTOS_debug_printf(( "Gateway IP Address: %xip\n", ulIPAddress ));
+        FreeRTOS_debug_printf(( "Gateway IP Address:    %lxip\n", FreeRTOS_htonl(ulGatewayAddress )));
 
         /* Convert the IP address of the DNS server to a string then print it out. */
-        FreeRTOS_debug_printf(( "DNS server IP Address: %xip\n", ulIPAddress ));
+        FreeRTOS_debug_printf(( "DNS server IP Address: %lxip\n", FreeRTOS_htonl(ulDNSServerAddress )));
     }
 
 }

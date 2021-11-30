@@ -14,18 +14,19 @@
 #include <Stdio.h>
 #include <Stdarg.h>
 
+#ifndef _DEBUG
+#error Release not supported yet
+#endif
+
 //uint8_t ucHeap[configTOTAL_HEAP_SIZE] _At 0xB80000;
 HeapRegion_t xHeapRegions[] =
 {
   { 0, 0 }, 
-  { ( uint8_t * ) 0xB90000, 0x80000 }, 
+#ifdef _DEBUG  
+  { ( uint8_t * ) 0xB80000, 0x80000 }, 
+#endif  
   { NULL, 0 }
 };
-
-uint8_t *pvPortMalloc64k()
-{
-	return (uint8_t*) 0xB80000;
-}
 
 void portSetup()
 {
@@ -226,23 +227,6 @@ void vApplicationMallocFailedHook()
 }
 
 static long ulNextRand = 0x12345678;
-
-/* You are right its a little engine MPU but the compiler 
-   does not be able to handle the existing FreeRTOS macro
- */  
-UINT32 portFreeRTOS_htonl( UINT32 ulIn ) 											
-{
-											// aabbccdd
-	return  (ulIn << 24UL) 				|	// dd000000
-			(ulIn <<  8UL) & 0xFF0000UL |	// ddcc0000
-			(ulIn >>  8UL) & 0xFF00UL 	|	// ddccbb00
-			(ulIn >> 24UL);					// ddccbbaa
-}
-
-UINT16 portFreeRTOS_htons( UINT16 usIn ) 											
-{
-	return (usIn >> 8U) | (usIn << 8U);
-}
 
 long uxRand( void )
 {

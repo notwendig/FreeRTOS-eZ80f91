@@ -34,7 +34,10 @@ const char *hostname = "nadiez80";
 //void vStartTCPCommandInterpreterTask( uint16_t usStackSize, uint32_t ulPort, UBaseType_t uxPriority );
 void vStartUDPCommandInterpreterTask( uint16_t usStackSize, uint32_t ulPort, UBaseType_t uxPriority );
 void vRegisterCLICommands( void );
+
 void loadcpm(char *mem);
+extern uint8_t cpmram;
+
 
 TaskHandle_t hndlA,hndlB,hndlC,hndlD,hndlCPM;
 uint8_t volatile last=sizeof(size_t);
@@ -68,7 +71,8 @@ void StressThread(void *arg)
 		upHZ = uptime( );       
 		h = upHZ.sec / 3600;
 		m = upHZ.sec % 3600 / 60;
-		s = upHZ.sec % 60;		printf("\x1b[s\x1b[%d;0HUT %u:%u:%u %ums \n\x1b[u",c , h, m, s, upHZ.msec);
+		s = upHZ.sec % 60;		
+		printf("\x1b[s\x1b[%d;0HUT %u:%u:%u %ums \n\x1b[u",c , h, m, s, upHZ.msec);
 		vTaskDelay(pdMS_TO_TICKS(1000)); 
 	}
 	
@@ -115,17 +119,16 @@ void TaskLED( void *pvParameters )
 int main(int argc, void *argv[])
 {
 	BaseType_t res;
-	uint8_t *cpmram;
 	
 	portSetup();
 	
 	TTYInit();
-	puts("\033[2J\x1b[23;0H Hello ez80 tty");
+	puts("\033[2J\x1b[9;0H eZ80 tty");
 	
 	initRTC();
 	initButtons();
 	initLED5x7();
-		
+	printf("%lX->%lX->%ip\n",0x11223344UL,portFreeRTOS_htonl(0x11223344UL),portFreeRTOS_htonl(0x11223344UL));
 	res = FreeRTOS_IPInit( ucIPAddress, ucNetMask, ucGatewayAddress, ucDNSServerAddress, ucMACAddress );
 	initConsole();
 	
@@ -133,7 +136,7 @@ int main(int argc, void *argv[])
 	res = xTaskCreate( TaskLED, "TaskLED", configMINIMAL_STACK_SIZE, (void *)portMAX_DELAY, 3, NULL);
 
 	vStartNTPTask( 2048, 4 );
-	res = xTaskCreate(PutchThread, "PutchThreadA", 2048, (void*)'A', 4, &hndlA);
+	res = xTaskCreate(PutchThread, "PutchThreadA", 2048, (void*)'A', 2, &hndlA);
 	res = xTaskCreate(PutchThread, "PutchThreadB", 2048, (void*)'B', 3, &hndlB);
 	vRegisterCLICommands();
 	vStartUDPCommandInterpreterTask( 1024, CGI_PORT, 3 );
@@ -141,9 +144,8 @@ int main(int argc, void *argv[])
 
 
 	res = xTaskCreate(StressThread, "StressThreadA", 2048, (void*)5, 3, &hndlC);
-	res = xTaskCreate(StressThread, "StressThreadB", 2048, (void*)14, 3, &hndlD);
-	cpmram = pvPortMalloc64k();
-	res = xTaskCreate(prvTCPCpmIOTask,"CPM22",2048,cpmram,4,&hndlCPM);
+	res = xTaskCreate(StressThread, "StressThreadB", 2048, (void*)6, 4, &hndlD);
+	res = xTaskCreate(prvTCPCpmIOTask,"CPM22",2048,&cpmram,4,&hndlCPM);
 
 	vTaskStartScheduler();
  

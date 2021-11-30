@@ -8,19 +8,19 @@
 <file filter-key="">CPM\CPM22\BOOT.ASM</file>
 <file filter-key="">FreeRTOSTCP\portable\BufferManagement\BufferAllocation_2.c</file>
 <file filter-key="">CPM\CPM22\CCP.ASM</file>
-<file filter-key="">.\CLI-commands.c</file>
-<file filter-key="">.\console.c</file>
+<file filter-key="">src\CLI-commands.c</file>
+<file filter-key="">src\console.c</file>
 <file filter-key="">CPM\CPMTask.asm</file>
 <file filter-key="">FreeRTOS\croutine.c</file>
-<file filter-key="">.\cstartup.asm</file>
+<file filter-key="">src\cstartup.asm</file>
 <file filter-key="">FreeRTOS\event_groups.c</file>
 <file filter-key="">CPM\exbios.c</file>
-<file filter-key="">.\ez80_buttons.c</file>
-<file filter-key="">.\ez80_leds.c</file>
-<file filter-key="">.\ez80_letsS.asm</file>
-<file filter-key="">.\ez80_ntp.c</file>
-<file filter-key="">.\ez80_rtc.c</file>
+<file filter-key="">src\ez80_buttons.c</file>
+<file filter-key="">src\ez80_leds.c</file>
+<file filter-key="">src\ez80_letsS.asm</file>
 <file filter-key="">FreeRTOSTCP\FreeRTOS_ARP.c</file>
+<file filter-key="">src\ez80_ntp.c</file>
+<file filter-key="">src\ez80_rtc.c</file>
 <file filter-key="">FreeRTOSCLI\FreeRTOS_CLI.c</file>
 <file filter-key="">FreeRTOSTCP\FreeRTOS_DHCP.c</file>
 <file filter-key="">FreeRTOSTCP\FreeRTOS_DNS.c</file>
@@ -31,22 +31,22 @@
 <file filter-key="">FreeRTOSTCP\FreeRTOS_TCP_WIN.c</file>
 <file filter-key="">FreeRTOSTCP\FreeRTOS_UDP_IP.c</file>
 <file filter-key="">FreeRTOS\portable\MemMang\heap_5.c</file>
-<file filter-key="">.\init_params_f91.asm</file>
+<file filter-key="">src\init_params_f91.asm</file>
 <file filter-key="">FreeRTOS\list.c</file>
-<file filter-key="">.\llport.asm</file>
-<file filter-key="">.\main.c</file>
+<file filter-key="">src\llport.asm</file>
+<file filter-key="">src\main.c</file>
 <file filter-key="">monitor\monitor.c</file>
-<file filter-key="">.\networkinterface.c</file>
-<file filter-key="">.\port.c</file>
-<file filter-key="">.\printf.c</file>
+<file filter-key="">src\networkinterface.c</file>
+<file filter-key="">src\port.c</file>
+<file filter-key="">src\printf.c</file>
 <file filter-key="">FreeRTOS\queue.c</file>
 <file filter-key="">FreeRTOS\stream_buffer.c</file>
 <file filter-key="">FreeRTOS\tasks.c</file>
 <file filter-key="">FreeRTOS\timers.c</file>
-<file filter-key="">.\trap.c</file>
-<file filter-key="">.\tty.c</file>
-<file filter-key="">.\UDPCommandServer.c</file>
-<file filter-key="">.\vectors24.asm</file>
+<file filter-key="">src\trap.c</file>
+<file filter-key="">src\tty.c</file>
+<file filter-key="">src\UDPCommandServer.c</file>
+<file filter-key="">src\vectors24.asm</file>
 </files>
 
 <!-- configuration information -->
@@ -56,7 +56,7 @@
 <tool name="Assembler">
 <options>
 <option name="define" type="string" change-action="assemble">_EZ80ACCLAIM!=1,_MULTI_THREAD=1,_DEBUG,_EZ80F91</option>
-<option name="include" type="string" change-action="assemble">CPM\CPM22,                     include\std,                     libc\rtl</option>
+<option name="include" type="string" change-action="assemble">CPM\CPM22, include\std</option>
 <option name="list" type="boolean" change-action="none">true</option>
 <option name="listmac" type="boolean" change-action="none">true</option>
 <option name="name" type="boolean" change-action="none">true</option>
@@ -69,7 +69,7 @@
 <tool name="Compiler">
 <options>
 <option name="padbranch" type="string" change-action="compile">Off</option>
-<option name="define" type="string" change-action="compile">_DEBUG,_EZ80F91,_EZ80ACCLAIM!,_MULTI_THREAD=1,DEMOVERSION="1.0b",_MULTI_THREAD</option>
+<option name="define" type="string" change-action="compile">_DEBUG,_EZ80F91,_EZ80ACCLAIM!,DEMOVERSION="2.0 dbg",_MULTI_THREAD</option>
 <option name="genprintf" type="boolean" change-action="compile">false</option>
 <option name="keepasm" type="boolean" change-action="none">true</option>
 <option name="keeplst" type="boolean" change-action="none">true</option>
@@ -79,8 +79,8 @@
 <option name="optspeed" type="boolean" change-action="compile">false</option>
 <option name="promote" type="boolean" change-action="compile">true</option>
 <option name="reduceopt" type="boolean" change-action="compile">true</option>
-<option name="stdinc" type="string" change-action="compile">Z:\ZDSII_eZ80Acclaim!_5.3.4\ZTP2.5.1\RZK\Inc</option>
-<option name="usrinc" type="string" change-action="compile">eZ80F91_99C0879;FreeRTOS\include;FreeRTOSTCP\include;FreeRTOSCLI;CPM</option>
+<option name="stdinc" type="string" change-action="compile">inc;Z:\ZDSII_eZ80Acclaim!_5.3.4\ZTP2.5.1\RZK\Inc</option>
+<option name="usrinc" type="string" change-action="compile">inc;FreeRTOS\include;FreeRTOSTCP\include;FreeRTOSCLI;CPM;monitor</option>
 <option name="watch" type="boolean" change-action="none">false</option>
 <option name="multithread" type="boolean" change-action="compile">true</option>
 </options>
@@ -129,31 +129,7 @@
 </tool>
 <tool name="Linker">
 <options>
-<option name="directives" type="string" change-action="build">COPY BOOTSEG ROM
-COPY CCPSEG ROM
-COPY BDOSSEG ROM
-COPY BIOSSEG ROM
-
-DEFINE __low_romboot = copy base of BOOTSEG
-DEFINE __low_boot = base of BOOTSEG
-DEFINE __len_boot = length of BOOTSEG
-RANGE RAM $0 :$7F, $E400:$FBFF,$FA00:$FFD6
-
-DEFINE __low_romccp = copy base of CCPSEG
-DEFINE __low_ccp = base of CCPSEG
-DEFINE __len_ccp = length of CCPSEG
-
-DEFINE __low_rombdos = copy base of BDOSSEG
-DEFINE __low_bdos = base of BDOSSEG
-DEFINE __len_bdos = length of BDOSSEG
-
-DEFINE __low_rombios = copy base of BIOSSEG
-DEFINE __low_bios = base of BIOSSEG
-DEFINE __len_bios = length of BIOSSEG
-
-ORDER BOOTSEG,CCPSEG,BDOSSEG,BIOSSEG
-
-</option>
+<option name="directives" type="string" change-action="build"></option>
 <option name="createnew" type="boolean" change-action="build">true</option>
 <option name="exeform" type="string" change-action="build">OMF695,INTEL32</option>
 <option name="linkctlfile" type="string" change-action="build">Debug\ez80FreeROS_Debug.linkcmd</option>
@@ -195,34 +171,139 @@ ORDER BOOTSEG,CCPSEG,BDOSSEG,BIOSSEG
 </tool>
 </tools>
 </configuration>
+<configuration name="Release" >
+<tools>
+<tool name="Assembler">
+<options>
+<option name="define" type="string" change-action="assemble">_EZ80ACCLAIM!=1,_MULTI_THREAD=1,_DEBUG,_EZ80F91</option>
+<option name="include" type="string" change-action="assemble">CPM\CPM22,    include\std</option>
+<option name="list" type="boolean" change-action="none">true</option>
+<option name="listmac" type="boolean" change-action="none">true</option>
+<option name="name" type="boolean" change-action="none">true</option>
+<option name="pagelen" type="integer" change-action="none">0</option>
+<option name="pagewidth" type="integer" change-action="none">132</option>
+<option name="quiet" type="boolean" change-action="none">true</option>
+<option name="sdiopt" type="boolean" change-action="compile">true</option>
+</options>
+</tool>
+<tool name="Compiler">
+<options>
+<option name="padbranch" type="string" change-action="compile">Off</option>
+<option name="define" type="string" change-action="compile">_EZ80F91,_EZ80ACCLAIM!,DEMOVERSION="2.0",_MULTI_THREAD</option>
+<option name="genprintf" type="boolean" change-action="compile">false</option>
+<option name="keepasm" type="boolean" change-action="none">true</option>
+<option name="keeplst" type="boolean" change-action="none">true</option>
+<option name="list" type="boolean" change-action="none">true</option>
+<option name="listinc" type="boolean" change-action="none">false</option>
+<option name="modsect" type="boolean" change-action="compile">false</option>
+<option name="optspeed" type="boolean" change-action="compile">false</option>
+<option name="promote" type="boolean" change-action="compile">true</option>
+<option name="reduceopt" type="boolean" change-action="compile">false</option>
+<option name="stdinc" type="string" change-action="compile">inc;Z:\ZDSII_eZ80Acclaim!_5.3.4\ZTP2.5.1\RZK\Inc</option>
+<option name="usrinc" type="string" change-action="compile">inc;FreeRTOS\include;FreeRTOSTCP\include;FreeRTOSCLI;CPM;monitor</option>
+<option name="watch" type="boolean" change-action="none">false</option>
+<option name="multithread" type="boolean" change-action="compile">true</option>
+</options>
+</tool>
+<tool name="Debugger">
+<options>
+<option name="target" type="string" change-action="rebuild">eZ80F91_99C0942_Flash</option>
+<option name="debugtool" type="string" change-action="none">USBSmartCable</option>
+<option name="usepageerase" type="boolean" change-action="none">true</option>
+</options>
+</tool>
+<tool name="FlashProgrammer">
+<options>
+<option name="erasebeforeburn" type="boolean" change-action="none">false</option>
+<option name="eraseinfopage" type="boolean" change-action="none">false</option>
+<option name="enableinfopage" type="boolean" change-action="none">false</option>
+<option name="includeserial" type="boolean" change-action="none">false</option>
+<option name="offset" type="integer" change-action="none">0</option>
+<option name="snenable" type="boolean" change-action="none">false</option>
+<option name="sn" type="string" change-action="none">000000000000000000000000</option>
+<option name="snsize" type="integer" change-action="none">1</option>
+<option name="snstep" type="integer" change-action="none">000000000000000000000000</option>
+<option name="snstepformat" type="integer" change-action="none">0</option>
+<option name="snaddress" type="string" change-action="none">0</option>
+<option name="snformat" type="integer" change-action="none">0</option>
+<option name="snbigendian" type="boolean" change-action="none">true</option>
+<option name="singleval" type="string" change-action="none">0</option>
+<option name="singlevalformat" type="integer" change-action="none">0</option>
+<option name="usepageerase" type="boolean" change-action="none">false</option>
+<option name="useinfopage" type="boolean" change-action="none">false</option>
+</options>
+</tool>
+<tool name="General">
+<options>
+<option name="warn" type="boolean" change-action="none">true</option>
+<option name="debug" type="boolean" change-action="assemble">true</option>
+<option name="debugcache" type="boolean" change-action="none">true</option>
+<option name="igcase" type="boolean" change-action="assemble">false</option>
+<option name="outputdir" type="string" change-action="compile">Release\</option>
+</options>
+</tool>
+<tool name="Librarian">
+<options>
+<option name="outfile" type="string" change-action="build">.\Release\ez80FreeROS.lib</option>
+</options>
+</tool>
+<tool name="Linker">
+<options>
+<option name="directives" type="string" change-action="build"></option>
+<option name="createnew" type="boolean" change-action="build">true</option>
+<option name="exeform" type="string" change-action="build">OMF695,INTEL32</option>
+<option name="linkctlfile" type="string" change-action="build">Debug\ez80FreeROS_Debug.linkcmd</option>
+<option name="map" type="boolean" change-action="none">true</option>
+<option name="maxhexlen" type="integer" change-action="build">64</option>
+<option name="objlibmods" type="string" change-action="build"></option>
+<option name="of" type="string" change-action="build">Release\ez80FreeROS</option>
+<option name="quiet" type="boolean" change-action="none">true</option>
+<option name="relist" type="boolean" change-action="build">true</option>
+<option name="startuptype" type="string" change-action="build">Included</option>
+<option name="startuplnkcmds" type="boolean" change-action="build">true</option>
+<option name="usecrun" type="boolean" change-action="build">true</option>
+<option name="warnoverlap" type="boolean" change-action="none">true</option>
+<option name="xref" type="boolean" change-action="none">true</option>
+<option name="undefisfatal" type="boolean" change-action="none">true</option>
+<option name="warnisfatal" type="boolean" change-action="none">true</option>
+<option name="sort" type="string" change-action="none">ADDRESS</option>
+<option name="padhex" type="boolean" change-action="build">false</option>
+<option name="fplib" type="string" change-action="build">Dummy</option>
+<option name="useadddirectives" type="boolean" change-action="build">false</option>
+<option name="linkconfig" type="string" change-action="build">Standard</option>
+<option name="flashinfo" type="string" change-action="build">000000-0001FF</option>
+<option name="ram" type="string" change-action="build">B80000-C7FFFF</option>
+<option name="rom" type="string" change-action="build">000000-03FFFF</option>
+<option name="extio" type="string" change-action="build">000000-00FFFF</option>
+<option name="intio" type="string" change-action="build">000000-0000FF</option>
+</options>
+</tool>
+<tool name="Middleware">
+<options>
+<option name="usezsl" type="boolean" change-action="rebuild">false</option>
+<option name="zslports" type="string" change-action="rebuild"></option>
+<option name="zsluarts" type="string" change-action="rebuild"></option>
+<option name="userzk" type="boolean" change-action="rebuild">false</option>
+<option name="rzkconfigpi" type="boolean" change-action="rebuild">true</option>
+<option name="rzkconfigmini" type="boolean" change-action="rebuild">false</option>
+<option name="rzkcomps" type="string" change-action="rebuild"></option>
+</options>
+</tool>
+</tools>
+</configuration>
 </configurations>
 
 <!-- watch information -->
 <watch-elements>
 <watch-element expression="xHeapRegions" />
-<watch-element expression="__heapbot" />
 </watch-elements>
 
 <!-- breakpoint information -->
 <breakpoints>
 <breakpoint temporary="false" enabled="true" >
-<line-number>57</line-number>
-<pathname>Z:\workspace\eZ80F91_99C0879\init_params_f91.asm</pathname>
+<line-number>58</line-number>
+<pathname>Z:\workspace\FreeRTOS-eZ80f91\src\init_params_f91.asm</pathname>
 <address>846</address>
-<command></command>
-<preserve-type>0</preserve-type>
-</breakpoint>
-<breakpoint temporary="false" enabled="true" >
-<line-number>144</line-number>
-<pathname>Z:\workspace\eZ80F91_99C0879\monitor\monitor.c</pathname>
-<address>99860</address>
-<command></command>
-<preserve-type>0</preserve-type>
-</breakpoint>
-<breakpoint temporary="false" enabled="true" >
-<line-number>136</line-number>
-<pathname>Z:\workspace\eZ80F91_99C0879\monitor\monitor.c</pathname>
-<address>99791</address>
 <command></command>
 <preserve-type>0</preserve-type>
 </breakpoint>

@@ -20,13 +20,9 @@
 ;
 ;   Set origin for CP/M
 ;
-if _EZ80F91
-	DEFINE  CCPSEG,SPACE=RAM,ORG=CCP
-	SEGMENT CCPSEG
+	SEGMENT CPM22
 	.assume adl=0
-else
 	ORG	CCP
-endif
 	
 ;
 CBASE:	JP	COMMAND		;execute command processor (ccp).
