@@ -22,7 +22,31 @@ _xTickCountHeigh: dw24    0
 
 	segment code
 	.assume adl=1
-
+;UINT32 portFreeRTOS_htonl( UINT32 ulIn ) 											
+;      L H U E    L H U E
+; ix+6 a.b.c.d -> d.c.b.a
+	xdef _portFreeRTOS_htonl
+_portFreeRTOS_htonl:
+		push	ix
+		ld		ix,0
+		add		ix,sp
+		ld		hl,(ix+5)
+		ld		e,(ix+6)
+		ld		h,(ix+8)
+		ld		l,(ix+9)
+		pop		ix
+		ret
+;UINT16 portFreeRTOS_htons( UINT16 usIn ) 											
+	xdef _portFreeRTOS_htons
+_portFreeRTOS_htons:
+		push	ix
+		ld		ix,0
+		add		ix,sp	
+		ld		h,(ix+6)
+		ld		l,(ix+7)
+		pop		ix
+		ret
+		
 tasktrap:
 $$:	nop
 	jr		$B

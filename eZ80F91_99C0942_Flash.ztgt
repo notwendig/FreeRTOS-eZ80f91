@@ -5,23 +5,23 @@
          <changeFrequencyOnReset>true</changeFrequencyOnReset>
          <chargePumpFreq>1f4</chargePumpFreq>
          <clockLockCriteria>8</clockLockCriteria>
-         <oscFrequency>5000000</oscFrequency>
+         <oscFrequency>50000000</oscFrequency>
       </PLL>
-      <clockType>PLL</clockType>
+      <clockType>oscillator</clockType>
       <frequency>50000000</frequency>
    </Clock>
    <ControlReg>
       <pc>0</pc>
-      <splStackPtr>BA0000</splStackPtr>
+      <splStackPtr>C80000</splStackPtr>
       <spsStackPtr>FFFF</spsStackPtr>
-      <useAdlMode>true</useAdlMode>
+      <useAdlMode>false</useAdlMode>
    </ControlReg>
    <ExtFlash>
       <device>Am29LV160BB S29AL016 Byte</device>
       <externalAddress>600000</externalAddress>
       <externalAutoSelect>true</externalAutoSelect>
       <externalRamLower>B80000</externalRamLower>
-      <externalRamUpper>B9FFFF</externalRamUpper>
+      <externalRamUpper>C7FFFF</externalRamUpper>
       <manufacturer>AMD</manufacturer>
       <units>1</units>
       <usingExternal>true</usingExternal>
@@ -31,21 +31,21 @@
       <ChipSelects>
          <CS0>
             <busMode>0</busMode>
-            <controlRegister>0</controlRegister>
+            <controlRegister>A8</controlRegister>
             <lower>10</lower>
             <upper>1F</upper>
          </CS0>
          <CS1>
             <busMode>0</busMode>
-            <controlRegister>8</controlRegister>
-            <lower>b8</lower>
-            <upper>b9</upper>
+            <controlRegister>28</controlRegister>
+            <lower>C0</lower>
+            <upper>C7</upper>
          </CS1>
          <CS2>
-            <busMode>0</busMode>
-            <controlRegister>0</controlRegister>
-            <lower>0</lower>
-            <upper>0</upper>
+            <busMode>81</busMode>
+            <controlRegister>28</controlRegister>
+            <lower>B0</lower>
+            <upper>BF</upper>
          </CS2>
          <CS3>
             <busMode>0</busMode>

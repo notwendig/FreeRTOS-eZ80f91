@@ -156,7 +156,7 @@ static const dpb_t defdpb = {
 
 void CPM22Task(uint8_t* ram);
 void prvTCPCpmIOTask( void *ram );
-extern uint8_t COLD;
+extern uint8_t loader;
 static uint24_t mbase()
 {
 	uint24_t mb=0;
@@ -251,7 +251,7 @@ static const pdu_t *doRamDiskReq(pdu_t *req)
 					{
 						offset = (uint8_t*)((req->d.ioreq.track * 26 + req->d.ioreq.sect -1) * 128);
 						if(req->d.ioreq.track <= 1)	
-							offset += (unsigned)&COLD;
+							offset += (unsigned)&loader;
 						else
 							offset += (unsigned)ramdisk - 2*26;
 						memcpy(&rsp->d.ioreq.data,offset,SECTORSZ);
