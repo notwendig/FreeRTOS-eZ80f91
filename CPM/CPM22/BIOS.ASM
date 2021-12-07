@@ -1,48 +1,29 @@
 	include CPM.INC
 
-	SEGMENT CPM22
-	.assume adl=0
+
 	ORG	BIOS
-	
-		GLOBAL BOOT 	;cold start
-		GLOBAL WBOOT 	;warm start
-		GLOBAL CONST 	;console status
-		GLOBAL CONIN 	;console character in
-		GLOBAL CONOUT ;console character out
-		GLOBAL LIST 	;list character out
-		GLOBAL PUNCH 	;punch character out
-		GLOBAL READER ;reader character out
-		GLOBAL HOME 	;move head to home position
-		GLOBAL SELDSK ;select disk
-		GLOBAL SETTRK ;set track number
-		GLOBAL SETSEC ;set sector number
-		GLOBAL SETDMA ;set dma address
-		GLOBAL READ 	;read disk
-		GLOBAL WRITE 	;write disk
-		GLOBAL LISTST ;return list status
-		GLOBAL SECTRN ;sector translate
 
 NSECTS	EQU	(BIOS-CCP+127)/128	;warm start sector count
 ;
 ;	jump vector for individual subroutines
 ;
-BOOT:	JP	_BOOT		;cold start
-WBOOT:	JP	_WBOOT		;warm start
-CONST:	JP	_CONST		;console status
-CONIN:	JP	_CONIN		;console character in
-CONOUT:	JP	_CONOUT		;console character out
-LIST:	JP	_CLIST		;list character out
-PUNCH:	JP	_PUNCH		;punch character out
-READER:	JP	_READER		;reader character out
-HOME:	JP	_HOME		;move head to home position
-SELDSK:	JP	_SELDSK		;select disk
-SETTRK:	JP	_SETTRK		;set track number BC
-SETSEC:	JP	_SETSEC		;set sector number
-SETDMA:	JP	_SETDMA		;set dma address
-READ:	JP	_DREAD		;read disk
-WRITE:	JP	_WRITE		;write disk
-LISTST:	JP	_LISTST		;return list status
-SECTRN:	JP	_SECTRN		;sector translate
+		JP	_BOOT		;cold start
+		JP	_WBOOT		;warm start
+		JP	_CONST		;console status
+		JP	_CONIN		;console character in
+		JP	_CONOUT		;console character out
+		JP	_PLIST		;list character out
+		JP	_PUNCH		;punch character out
+		JP	_READER		;reader character out
+		JP	_HOME		;move head to home position
+		JP	_SELDSK		;select disk
+		JP	_SETTRK		;set track number BC
+		JP	_SETSEC		;set sector number
+		JP	_SETDMA		;set dma address
+		JP	_DREAD		;read disk
+		JP	_WRITE		;write disk
+		JP	_LISTST		;return list status
+		JP	_SECTRN		;sector translate
 ;
 ;	fixed data tables for four-drive standard
 ;	IBM-compatible 8" disks
@@ -99,7 +80,7 @@ HDBASE:
 	DW	0000H,0000H
 	DW	DIRBF,HDBLK
 	DW	CHKHD8,ALLHD8
-	
+
 ;	disk parameter header drive 9 = J
 HDBAS9:
 	DW	HDTRA,0000H
@@ -142,14 +123,14 @@ HDBLK:; 4mb-hd2 diskdef
 ;	individual subroutines to perform each function
 ;	simplest case is to just perform parameter initialization
 ;
-_BOOT:   
+_BOOT:
 		LD		SP,80H		;use space below buffer for stack
-		CALL	$F
+		CALL	$F1
 		DB		"64K CP/M Vers. 2.2 / CBIOS V1.5"
 		DB		CR,LF
 		DB		"eZ80 port (C)1998-2021 by Juergen Sievers"
 		DB		CR,LF,0
-$$:		POP		HL
+$F1:	POP		HL
 BOOTL:  LD		A,(HL)
 		OR		A
 		JR		Z,BOOTC
@@ -165,7 +146,7 @@ BOOTC:  LD		(IOBYTE),A	;clear the iobyte
 ;
 ;	simplest case is to read the disk until all sectors loaded
 ;
-_WBOOT:  
+_WBOOT:
 		LD	SP,128				; use space below buffer for stack
 
 		XOR		A				; select drive A
@@ -238,14 +219,14 @@ GOCPM:
 ;
 ;	console status, return 0ffh if character ready, 00h if not
 ;
-_CONST:	
+_CONST:
 	EXBIOS CONIO, PORTINP, CONSTA	;get console status
 	RET
 ;
 ;	console character into register a
 ;
 
-_CONIN:	
+_CONIN:
 	EXBIOS CONIO, PORTINP, CONDAT	;get character from console
 	OR	A
 ;	RET Z
@@ -254,34 +235,34 @@ _CONIN:
 ;
 ;	console character output from register c
 ;
-_CONOUT: 
+_CONOUT:
 	LD	A,C		;get to accumulator
 	EXBIOS	CONIO, PORTOUT, CONDAT	;send character to console
 	RET
 ;
 ;	list character from register c
 ;
-_CLIST:	
+_PLIST:
 	LD	A,C		;character to register a
 	EXBIOS	CONIO, PORTOUT, PRTDAT
 	RET
 ;
 ;	return list status (0 if not ready, 0xff if ready)
 ;
-_LISTST: 
+_LISTST:
 	EXBIOS	CONIO, PORTINP, PRTSTA
 	RET
 ;
 ;	punch character from register c
 ;
-_PUNCH:	
+_PUNCH:
 	LD	A,C		;character to register a
 	EXBIOS	CONIO, PORTOUT, AUXDAT
 	RET
 ;
 ;	read character into register a from reader device
 ;
-_READER: 
+_READER:
 	EXBIOS	CONIO, PORTINP, AUXDAT
 	RET
 ;
@@ -291,13 +272,13 @@ _READER:
 ;	move to the track 00 position of current drive
 ;	translate this call into a settrk call with parameter 00
 ;
-_HOME:	
+_HOME:
 	LD	BC,0		;select track 0
 	JP	SETTRK		;we will move to 00 on first read/write
 ;
 ;	select disk given by register C
 ;
-_SELDSK:LD	B,E 
+_SELDSK:LD	B,E
 	LD	HL,0000H	;error return code
 	LD	A,C
 	CP	4		;must be between 0 and 3
@@ -326,13 +307,13 @@ SEL:	EXBIOS	FDIO, PORTOUT, FDCD	;select disk drive c 0..4,8,9 I,J
 ;
 ;	set track given by register bc
 ;
-_SETTRK: 
+_SETTRK:
 	EXBIOS	FDIO, PORTOUT, FDCTBC
 	RET
 ;
 ;	set sector given by register bc
 ;
-_SETSEC: 
+_SETSEC:
 	EXBIOS	FDIO, PORTOUT, FDCSBC
 	RET
 ;
@@ -348,19 +329,19 @@ _SECTRN:
 ;
 ;	set dma address given by registers bc
 ;
-_SETDMA: 
+_SETDMA:
 	EXBIOS	DMAIO, PORTOUT, DMABC	;in dma
 	RET
 ;
 ;	perform read operation
 ;
-_DREAD:	
+_DREAD:
 	XOR	A		;read command -> A
 	JP	WAITIO		;to perform the actual i/o
 ;
 ;	perform a write operation
 ;
-_WRITE:	
+_WRITE:
 	LD	A,1		;write command -> A
 ;
 ;	enter here from read and write to perform the actual i/o
@@ -400,7 +381,8 @@ CHK03:	DS	16		;check vector 3
 CHKHD8:	DS	1		;check vector harddisk 8 I
 CHKHD9:	DS	1		;check vector harddisk 9 J
 ;
-	blkb FFFFh-FFD5h,FFh  
 EDAT:	EQU	$		;end of data area
-	
+	ds 10000h - $,0
+_BIOSEND	equ $
+
 	END	;of BIOS

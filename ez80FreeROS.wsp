@@ -11,40 +11,39 @@ ptn_Child3=Document-2
 ptn_Child4=Document-3
 ptn_Child5=Document-4
 ptn_Child6=Document-5
-ptn_Child7=Document-6
 
 [WorkState_v1_2.Frames.ChildFrames.Document-0]
 ptn_Child1=ViewFrame-0
 
 [WorkState_v1_2.Frames.ChildFrames.Document-0.ViewFrame-0]
-DocPathName=src\networkinterface.c
+DocPathName=src\init_params_f91.asm
 DocTemplateIndex=0
 DocumentString=IDE.Document
-IsActiveChildFrame=False
+IsActiveChildFrame=True
 IsFrameVisible=True
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPCIAAAAAACIAAAAAAIHEAAAAAMPBAAAAA
+WindowPlacement=MCAAAAAACAAAAAAADAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPOEAAAAAAOEAAAAAAJHCAAAAAJJBAAAAA
 
 [WorkState_v1_2.Frames.ChildFrames.Document-1]
 ptn_Child1=ViewFrame-0
 
 [WorkState_v1_2.Frames.ChildFrames.Document-1.ViewFrame-0]
-DocPathName=src\port.c
+DocPathName=src\uz.c
 DocTemplateIndex=0
 DocumentString=IDE.Document
 IsActiveChildFrame=False
 IsFrameVisible=True
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPIGAAAAAAIGAAAAAADJCAAAAADLBAAAAA
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPEDAAAAAAEDAAAAAAOCEAAAAAELBAAAAA
 
 [WorkState_v1_2.Frames.ChildFrames.Document-2]
 ptn_Child1=ViewFrame-0
 
 [WorkState_v1_2.Frames.ChildFrames.Document-2.ViewFrame-0]
-DocPathName=src\llport.asm
+DocPathName=src\port.c
 DocTemplateIndex=0
 DocumentString=IDE.Document
 IsActiveChildFrame=False
 IsFrameVisible=True
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPCIAAAAAACIAAAAAAMHEAAAAAAACAAAAA
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPMJAAAAAAMJAAAAAAGJEAAAAAMBCAAAAA
 
 [WorkState_v1_2.Frames.ChildFrames.Document-3]
 ptn_Child1=ViewFrame-0
@@ -55,38 +54,27 @@ DocTemplateIndex=0
 DocumentString=IDE.Document
 IsActiveChildFrame=False
 IsFrameVisible=True
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPGLAAAAAAGLAAAAAAALEAAAAAEDCAAAAA
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPAAAAAAAAAAAAAAAAKPDAAAAAAIBAAAAA
 
 [WorkState_v1_2.Frames.ChildFrames.Document-4]
 ptn_Child1=ViewFrame-0
 
 [WorkState_v1_2.Frames.ChildFrames.Document-4.ViewFrame-0]
-DocPathName=src\ez80_ntp.c
+DocPathName=inc\FreeRTOSConfig.h
 DocTemplateIndex=0
 DocumentString=IDE.Document
-IsActiveChildFrame=True
+IsActiveChildFrame=False
 IsFrameVisible=True
-WindowPlacement=MCAAAAAACAAAAAAADAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPAAAAAAAAAAAAAAAAKPDAAAAAOHBAAAAA
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPCIAAAAAACIAAAAAAMHEAAAAACACAAAAA
 
 [WorkState_v1_2.Frames.ChildFrames.Document-5]
 ptn_Child1=ViewFrame-0
 
 [WorkState_v1_2.Frames.ChildFrames.Document-5.ViewFrame-0]
-DocPathName=src\init_params_f91.asm
+DocPathName=monitor\monitor.c
 DocTemplateIndex=0
 DocumentString=IDE.Document
 IsActiveChildFrame=False
 IsFrameVisible=True
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPOEAAAAAAOEAAAAAADJCAAAAAEJBAAAAA
-
-[WorkState_v1_2.Frames.ChildFrames.Document-6]
-ptn_Child1=ViewFrame-0
-
-[WorkState_v1_2.Frames.ChildFrames.Document-6.ViewFrame-0]
-DocPathName=FreeRTOSTCP\FreeRTOS_DNS.c
-DocTemplateIndex=0
-DocumentString=IDE.Document
-IsActiveChildFrame=False
-IsFrameVisible=True
-WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPEDAAAAAAEDAAAAAAOCEAAAAACLBAAAAA
+WindowPlacement=MCAAAAAAAAAAAAAABAAAAAAAPPPPPPPPPPPPPPPPIPPPPPPPBOPPPPPPMJAAAAAAMJAAAAAAGJEAAAAAMBCAAAAA
 

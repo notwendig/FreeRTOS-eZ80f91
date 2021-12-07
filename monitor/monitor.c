@@ -109,7 +109,7 @@
 #include "NetworkInterface.h"
 #include "ez80_emac.h"
 #include "eZ80F91.h"
-#include "monitor\monitor.h"
+#include "monitor.h"
 #include <CTYPE.H>
 #include <String.h>
 
@@ -251,10 +251,10 @@ void sys_netinfo()
 	sockPrintf( ANSI_SCUR ANSI_COFF);
 	sockPrintf( ANSI_SATT(0,34,43) ANSI_GXY( 5,4) " Ethernet                                      ");
 	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY( 5,5) "Network: %s%s, %-23s", att, "Up  ",mod);
-	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY( 5,6) "IP     : %s%-15lxip ", att, ulIPAddress);
-	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY(30,6) "Mask   : %s%-15lxip ", att, ulNetMask);
-	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY( 5,7) "Gateway: %s%-15lxip ", att, ulGatewayAddress);
-	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY(30,7) "DNS    : %s%-15lxip ", att, ulDNSServerAddress);
+	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY( 5,6) "IP     : %s%-15lxip ", att, FreeRTOS_htonl(ulIPAddress));
+	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY(30,6) "Mask   : %s%-15lxip ", att, FreeRTOS_htonl(ulNetMask));
+	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY( 5,7) "Gateway: %s%-15lxip ", att, FreeRTOS_htonl(ulGatewayAddress));
+	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY(30,7) "DNS    : %s%-15lxip ", att, FreeRTOS_htonl(ulDNSServerAddress));
 	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY( 5,8) "txsz   : %s%-15u "	, att, stats->txsz);
 	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY(30,8) "rxsz   : %s%-15u "	, att, stats->rxsz);
 	sockPrintf( ANSI_SATT(0,36,40) ANSI_GXY( 5,9) "txdone : %s%-15u "	, att, stats->txdone);

@@ -1,33 +1,49 @@
+SHELL=/bin/bash
 
-ZDEII=~/ZiLOG/ZDSII_eZ80Acclaim!_5.3.4/bin/
+CPMFILES=./RAMDSK
+AFLAGS=-L -m -z --od obj --oo CIM,LST --dri
 
-LN=$(ZDEII)ez80link.exe
+AS=zmac
+CAT=cat
 
-LFLAGS=-FORMAT=INTEL32 -map -maxhexlen=32 -warnoverlap -xref -unresolved=fatal -sort ADDRESS=ascending -warn -NOigcase
+ASDIR=./CPM22
+ASRCS=BOOT.ASM CCP.ASM BDOS.ASM BIOS.ASM
+ACIMS=$(ASRCS:.ASM=.CIM)
 
-OBJS=BOOT.obj CCP.obj BDOS.obj BIOS.obj
 
-vpath %.obj ../Debug
+vpath %.ASM $(ASDIR)
 
-COMMA := ,
-EMPTY :=
-SPACE := $(EMPTY) $(EMPTY)
+all: CPM22_A.c
 
-NUMS = $(subst $(SPACE),$(COMMA),$(OBJS))
+# Compile Z80-Assembler to Z80-Binary
+%.CIM:%.ASM
+	$(AS) $(AFLAGS) -o $@ -o $(@:.CIM=.LST) $<
 
-all: cpm.sys
+# Concatinate all CP/M Binarys (BOOT,CCP,BDOS,BIOS)
+# to system-track (52 sectors) imgage
+CPM.SYS:$(ACIMS)
+	$(CAT) $^ | dd of=$@ bs=128 count=52
 
-cpm.sys:cpm.hex
-	srec_cat $< -Intel -o $@ -Binary
-	ln -fs $(CURDIR)/cpm.sys ./disks/A/.cpm.sys
-	
-cpm.hex:$(OBJS)
-	$(LN) @cpm.linkcmd
-	
-#.PONY check
+A.DSK:CPM.SYS $(CPMFILES)/*
+	cp $< $@
+	dd if=/dev/zero bs=3328 count=75 | tr '\0' '\345' >> $@
+	cd $(CPMFILES); cpmcp -f ibm-3740 $(CWD)$@ * 0:
+	cpmcp -f ibm-3740 $@ $(addprefix $(ASDIR)/,$(ASRCS)) 0:
+	md5sum $@ > $@.md5
 
-check:cpm.map
-#sed -ne 's/\s*Segment:\s*\(BOOT\|CPM22\|CBIOS\)\s*D:\([[:xdigit:]]\+\)\s*D:\([[:xdigit:]]\+\)\s*\([[:xdigit:]]\+\)h/\1 \2 \3 \4 /p' cpm.map
+A.UZ:A.DSK
+	../uzlib/examples/tgzip/tgzip $< A.UZ
+	md5sum $@ > $@.md5
+
+CPM22_A.c:A.UZ
+	srec_cat A.UZ -binary -output $@ -C-Array cpm22img -INClude
+
+# Very basic smoke test for decompressor
+test:CPM22_A.c
+	md5sum -c A.DSK.md5
+	../uzlib/examples/tgunzip/tgunzip A.UZ A.DSK
+	md5sum -c A.DSK.md5
+
 
 clean:
-	-rm cpm.map cpm.hex cpm.sys
+	-rm $(ACIMS) $(ACIMS:.CIM=.LST) CPM.SYS A.DSK CPM22_A.[ch] A.UZ *.md5

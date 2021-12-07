@@ -217,7 +217,7 @@ static void prvReadTime( struct SNtpPacket * pxPacket )
 	uxCurrentSeconds -= iTimeZone;
 
 	epoch_to_date_time(&xTimeStruct, uxCurrentSeconds);
-	/*
+
 	FreeRTOS_printf( ("NTP time: %d/%d/%02d %2d:%02d:%02d.%03u Diff %d %s (%lu ms), t %lu\n",
 		xTimeStruct.d.r.DOM,
 		xTimeStruct.d.r.MON,
@@ -229,7 +229,7 @@ static void prvReadTime( struct SNtpPacket * pxPacket )
 		( unsigned )ilDiff,
 		pcTimeUnit,
 		uxTravelTime, uxCurrentSeconds) );
-	*/	
+
 	if(xTimeStruct.d.r.SEC != rtc.d.r.SEC)
 	{
 		//xTimeStruct.d.r.HRS--;
@@ -336,7 +336,7 @@ static void prvNTPTask( void *pvParameters )
 			FreeRTOS_printf( ( "NTPD failed\n") );
 			break;
 		}
-		xSemaphoreTake( xNTPWakeupSem, 5000 );
+		xSemaphoreTake( xNTPWakeupSem, 50000 );
 	}
 }
 /*-----------------------------------------------------------*/

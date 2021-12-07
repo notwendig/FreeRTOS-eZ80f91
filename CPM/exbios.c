@@ -3,7 +3,7 @@
     All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
-   
+
     FreeRTOS is free software; you can redistribute it and/or modify it under
     the terms of the GNU General Public License (version 2) as published by the
     Free Software Foundation >>>> AND MODIFIED BY <<<< the FreeRTOS exception.
@@ -75,8 +75,8 @@
 	The Port was made and rudimentary tested on ZiLOG's
 	EZ80F910300ZCOG Developer Kit using ZDSII Acclaim 5.2.1 Developer
 	Environmen and comes WITHOUT ANY WARRANTY to you!
-	
-	
+
+
 	File: 	exbios.c
 			extended CBIOS (CP/M 2.2 BIOS) to support CP/M 2.2 tasks
 			Part of FreeRTOS Port for the eZ80F91 Development Kit eZ80F910300ZCOG
@@ -87,7 +87,7 @@
 	JSIE	 Juergen Sievers <JSievers@NadiSoft.de>
 
 	150804:	JSIE Start this port.
-	
+
 */
 
 /* FreeRTOS includes. */
@@ -108,18 +108,21 @@
 #include "exbios.h"
 #include <string.h>
 #include "printf.h"
+#include "uzlib.h"
+#include "CPM22_A.h"
+
 #define	VERSION "(C) 2021 v1.0.1 "
 
 // CP/M 2.2 console in queue
 static QueueHandle_t cpminq;
 
 static Socket_t xConnectedSocket = (Socket_t)-1;
-
+static const char pcLoadRamdiskMessage[] = "Be patient decompressing and loading of the Ramdisk takes a while.\n\r";
 static const char pcWelcomeMessage[] = "\n\rEZ80F91 CP/M 2.2 Console " VERSION "\n\r";
-			
+
 static TaskHandle_t thcpm;
 static Socket_t xSocketRDisk;
-static uint8_t  *ramdisk = NULL;
+static unsigned char *ramdisk = NULL;
 static struct freertos_sockaddr xRDiskAddress;
 static uint8_t  curdisk = -1;
 static uint16_t curFDCT = 0;	// fdc-port: # of track
@@ -127,7 +130,7 @@ static uint16_t curFDCS = 0;	// fdc-port: # of sector
 static uint8_t  curFDCST= 0;	// fdc-port: status;
 static uint8_t  curFDOP = 0;	// fdc-port: command 0=read, 1=write
 static char 	*dma= 0;
-static dpb_t 	*dpb= 0; 
+static dpb_t 	*dpb= 0;
 static uint16_t sequenz = 0;
 
 // Default disk IBM 3740 8" 77Trk*26Sec
@@ -165,6 +168,7 @@ static uint24_t mbase()
 	return mb;
 }
 
+
 uint8_t* farptr(uint8_t *nearptr)
 {
 	return (uint8_t*) ((uint24_t) nearptr & 0xFFFF | mbase());
@@ -176,6 +180,7 @@ uint8_t *z80Monitor(trapframe_t *context)
 	// ToDo: inject and run an Z80 Mashine-Monitor
 	FreeRTOS_debug_printf(("CP/M mashin-montor not supported yet."));
 	vTaskDelay(pdMS_TO_TICKS(1000));
+	configASSERT(0);
 	(*context->pc)++;
 	return *context->pc;
 }
@@ -184,7 +189,7 @@ uint8_t *z80BiosConsoleIO(trapframe_t *context)
 {
 	char dir = *farptr((*context->pc)++);
 	char c = context->af >> 8;
-	
+
 	if(dir)	// input
 	{
 		context->af &= 0xFF;
@@ -218,14 +223,14 @@ uint8_t *z80BiosConsoleIO(trapframe_t *context)
 			default:
 				break;
 		};
-	return *context->pc;	
+	return *context->pc;
 }
 
 static const pdu_t *doRamDiskReq(pdu_t *req)
 {
 	uint8_t *offset;
 	pdu_t *rsp = 0;
-	
+
 	if(ramdisk)
 	{
 		pdutype_t cmd = req->hdr.cmdid;
@@ -243,18 +248,15 @@ static const pdu_t *doRamDiskReq(pdu_t *req)
 				break;
 			case RDSK_ReadRequest:
 				rsp = FreeRTOS_GetUDPPayloadBuffer( sizeof(hdr_t) + sizeof(ioreq_t), portMAX_DELAY );
-				
+
 				if(rsp)
 				{
 					memcpy(rsp,req,sizeof(hdr_t) + sizeof(ioreq_t) - SECTORSZ);
 					if(req->d.ioreq.sect && req->d.ioreq.sect <= 26)
 					{
-						offset = (uint8_t*)((req->d.ioreq.track * 26 + req->d.ioreq.sect -1) * 128);
-						if(req->d.ioreq.track <= 1)	
-							offset += (unsigned)&loader;
-						else
-							offset += (unsigned)ramdisk - 2*26;
-						memcpy(&rsp->d.ioreq.data,offset,SECTORSZ);
+						uint8_t sect = req->d.ioreq.sect;
+						offset = (uint8_t*)((req->d.ioreq.track * 26 + sect -1) * SECTORSZ);
+						memcpy(rsp->d.ioreq.data,(const char*)((unsigned)ramdisk+offset),SECTORSZ);
 					}
 					else
 						rsp->hdr.cmdid |= RDSK_ErrorFlag;
@@ -262,18 +264,16 @@ static const pdu_t *doRamDiskReq(pdu_t *req)
 				break;
 			case RDSK_WriteRequest:
 				rsp = FreeRTOS_GetUDPPayloadBuffer( sizeof(hdr_t) + sizeof(ioreq_t) - SECTORSZ, portMAX_DELAY );
-				
+
 				if(rsp)
 				{
 					memcpy(rsp,req,sizeof(hdr_t) + sizeof(ioreq_t) - SECTORSZ);
 					if(req->d.ioreq.sect && req->d.ioreq.sect <= 26)
 					{
-						offset = (uint8_t*)((req->d.ioreq.track * 26 + req->d.ioreq.sect -1) * 128);
-						if(req->d.ioreq.track <= 1)	
-							break;
-						else
-							offset += (unsigned)ramdisk - 2*26;
-						memcpy(offset, req->d.ioreq.data,SECTORSZ);
+						uint8_t sect = req->d.ioreq.sect;
+						offset = (uint8_t*)((req->d.ioreq.track * 26 + sect -1) * SECTORSZ);
+
+						memcpy((char*)((unsigned)ramdisk+offset), req->d.ioreq.data,SECTORSZ);
 					}
 					else
 						rsp->hdr.cmdid |= RDSK_ErrorFlag;
@@ -293,15 +293,13 @@ static const pdu_t *doRamDiskReq(pdu_t *req)
 
 static const pdu_t *doRDiskReq(pdu_t *req)
 {
-	
+
 	pdu_t *rsp = 0;
 	int32_t io, iox = req->hdr.pdusz;
 	uint24_t cmdrsp = (req->hdr.cmdid|RDSK_Response);
-	
+
 	req->hdr.seqnz = sequenz;
-	
-	FreeRTOS_debug_printf(("req: cmd=%d, did=%d, sz=%d sqz=%d\n",req->hdr.cmdid,req->hdr.devid,req->hdr.pdusz,req->hdr.seqnz));
-	
+
 	io = FreeRTOS_sendto( xSocketRDisk, req, req->hdr.pdusz, FREERTOS_ZERO_COPY, &xRDiskAddress, sizeof(xRDiskAddress));
 	if(io <= 0)
 		FreeRTOS_ReleaseUDPPayloadBuffer( ( void * ) req );
@@ -310,11 +308,10 @@ static const pdu_t *doRDiskReq(pdu_t *req)
 		struct freertos_sockaddr xFrom;
 		socklen_t xFromLength;
 		xFromLength = sizeof(xFrom);
-		
+
 		io = FreeRTOS_recvfrom( xSocketRDisk, &rsp, 0, FREERTOS_ZERO_COPY, &xFrom, &xFromLength );
 		if(io > 0)
 		{
-			FreeRTOS_debug_printf(("rsp: cmd=%d, did=%d, sz=%d sqz=%d\n",rsp->hdr.cmdid,rsp->hdr.devid,rsp->hdr.pdusz,rsp->hdr.seqnz));
 			if(	io < sizeof(hdr_t) ||
 				io != rsp->hdr.pdusz   ||
 				rsp->hdr.seqnz != (uint16_t) ~sequenz ||
@@ -331,7 +328,7 @@ static const pdu_t *doRDiskReq(pdu_t *req)
 		else
 			rsp = 0;
 	}
-	
+
 	return rsp;
 }
 
@@ -340,16 +337,16 @@ static uint8_t *z80BiosDiskIO(trapframe_t *context)
 	char dir = *farptr((*context->pc)++);
 	char c = context->af >> 8;
 	pdu_t *rsp;
-	
+
 	if(dir)	// input
 	{
 		context->af = 0xFF;
 		switch((port_FDIO_t) *farptr((*context->pc)++))
 		{
 			case FDCST:	// fdc-port: status
-						// Returns A=0 for OK, 
-						//           1 for unrecoverable error, 
-						//           2 if disc is readonly, 
+						// Returns A=0 for OK,
+						//           1 for unrecoverable error,
+						//           2 if disc is readonly,
 						//        0FFh if media changed.
 				context->af |= (curFDCST << 8);
 				break;
@@ -375,14 +372,14 @@ static uint8_t *z80BiosDiskIO(trapframe_t *context)
 			case FDCD:	// fdc-port: # of drive
 				curdisk = -1;	// invalidate current drive
 				curFDCST = 0xFF;
-			
+
 				// disk id in range?
 				if(c < 4 || c == 8 || c == 9)
 				{
 					uint16_t sz;
 					pdu_t *req;
-					uint8_t  *xlt= 0;					
-					
+					uint8_t  *xlt= 0;
+
 					// if disk parameters given
 					if(context->hl)
 					{
@@ -390,21 +387,22 @@ static uint8_t *z80BiosDiskIO(trapframe_t *context)
 						dph_t *dph = (dph_t*) farptr((uint8_t*)context->hl);
 						dpb = (dpb_t*) farptr((uint8_t*)dph->dpb);
 						xlt = (uint8_t*) (dph->xlt ? farptr((uint8_t*)dph->xlt) : 0);
-					}		
+					}
 					else {
-						// else use IBM 8" default disk
+						// else boot from IBM 8" default disk
 						dpb = &defdpb;
 						xlt = defxlt;
 					}
-rdisk:								
+
+rdisk:
 					sz = sizeof(hdr_t) + sizeof(mountreq_t);
 					req = FreeRTOS_GetUDPPayloadBuffer( sz, portMAX_DELAY );
-					
+
 					if(req)
 					{
 						int i;
 						uint8_t *_xlt = &req->d.mountreq.xlt;
-						
+
 						req->hdr.pdusz = sz;					// size of this request
 						req->hdr.cmdid = RDSK_MountRequest;		// request type
 						req->hdr.devid = c;						// drive id 0=A, 1=B ...
@@ -412,31 +410,42 @@ rdisk:
 						snprintf((char*)req->d.mountreq.diskid,13U,"%c",'A' + c); // default name
 						req->d.mountreq.mode = 0;//LINEAR;						// No sector demapping
 						req->d.mountreq.secsz = SECSIZE;					// CP/M 128 sector size
-													
-						// append sector translation table	
+
+						// append sector translation table
 						for( i = 0; i < dpb->spt; i++)
 							_xlt[i] = xlt ? xlt[i] : i+1;
-										
-						// Request from server	
+
+						//FreeRTOS_debug_printf(("req: cmd=%hhd, did=%hhd, sz=%hd sqz=%hd\n",req->hdr.cmdid,req->hdr.devid,req->hdr.pdusz,req->hdr.seqnz));
+
 						if(!req->hdr.devid && ramdisk)
 							rsp = doRamDiskReq(req);
 						else
 						{
+							// Request from server
 							uint8_t devid = req->hdr.devid;
 							rsp = doRDiskReq(req);
 							if(!rsp && !ramdisk && !devid)
 							{
-								ramdisk = pvPortMalloc(236288);
+								size_t slen = cpm22img_length-4;
+								size_t dlen = *(uint32_t*)((size_t) cpm22img + slen);
+								ramdisk = pvPortMalloc(dlen);
 								if(ramdisk)
 								{
-									memset(ramdisk,0xE5,236288);
-									goto rdisk;
-								}							
+									int uz;
+									FreeRTOS_send( xConnectedSocket,  ( void * ) pcLoadRamdiskMessage,  strlen( pcLoadRamdiskMessage ), 0 );
+									memset(ramdisk,0xE5,dlen);
+									uz = uzip(ramdisk,dlen,cpm22img,slen);
+									if(TINF_OK == uz)
+										goto rdisk;
+									vPortFree(ramdisk);
+									ramdisk = NULL;
+								}
 							}
 						}
-								
+
 						if( rsp )
 						{
+							//FreeRTOS_debug_printf(("rsp: cmd=%hhd, did=%hhd, sz=%hd sqz=%hd\n",rsp->hdr.cmdid,rsp->hdr.devid,rsp->hdr.pdusz,rsp->hdr.seqnz));
 							if(!(rsp->hdr.cmdid & RDSK_ErrorFlag))
 							{
 								// OK, set active disk and status OK
@@ -445,9 +454,11 @@ rdisk:
 							}
 							FreeRTOS_ReleaseUDPPayloadBuffer( ( void * ) rsp);
 						}
+						else
+							context->hl = 0;
 					}
 				}
-				
+
 				// return hl=0 (dph) if no drive selected.
 				if(curdisk == -1)
 					context->hl = 0;
@@ -469,7 +480,7 @@ rdisk:
 					if(c)	// write
 					{
 						pdu_t *req = FreeRTOS_GetUDPPayloadBuffer( pdusz, portMAX_DELAY );
-				
+
 						if(req)
 						{
 							req->hdr.pdusz = pdusz;
@@ -482,7 +493,7 @@ rdisk:
 								rsp = doRamDiskReq(req);
 							else
 								rsp = doRDiskReq(req);
-							
+
 							if(rsp)
 							{
 								if(!(rsp->hdr.cmdid & RDSK_ErrorFlag))
@@ -492,12 +503,12 @@ rdisk:
 						}
 					}
 					else	// readt
-					{ 
+					{
 						pdu_t *req = FreeRTOS_GetUDPPayloadBuffer(pdusz - SECTORSZ, portMAX_DELAY );
 						if(req)
 						{
 							pdu_t *rsp;
-							
+
 							req->hdr.pdusz = pdusz - SECTORSZ;
 							req->hdr.cmdid = RDSK_ReadRequest;
 							req->hdr.devid = curdisk;
@@ -506,7 +517,7 @@ rdisk:
 							if(!curdisk && ramdisk)
 								rsp = doRamDiskReq(req);
 							else
-								rsp = doRDiskReq(req);	
+								rsp = doRDiskReq(req);
 							if(rsp)
 							{
 								if(!(rsp->hdr.cmdid & RDSK_ErrorFlag))
@@ -515,7 +526,7 @@ rdisk:
 									curFDCST = 0;
 								}
 								FreeRTOS_ReleaseUDPPayloadBuffer( ( void * ) rsp);
-							}	
+							}
 						}
 					}
 				}
@@ -525,11 +536,11 @@ rdisk:
 			default:
 				break;
 		};
-	return *context->pc;	
+	return *context->pc;
 }
 
 uint8_t *z80BiosDMAIO(trapframe_t *context)
-{	
+{
 	char dir = *farptr((*context->pc)++);
 	char c = context->af >> 8;
 	char port = *farptr((*context->pc)++);
@@ -569,7 +580,6 @@ uint8_t *exbioscall(trapframe_t* arg)
 			configASSERT(0);
 		break;
 	}
-	
 	return *arg->pc;
 }
 
@@ -580,7 +590,7 @@ static Socket_t prvOpenTCPServerSocket( uint16_t usPort )
 
 	static const TickType_t xReceiveTimeOut = portMAX_DELAY; // pdMS_TO_TICKS(1000);
 	static const TickType_t xTransmitTimeOut = portMAX_DELAY; // pdMS_TO_TICKS(1000);
-			
+
 	const BaseType_t xBacklog = 20;
 	BaseType_t xReuseSocket = pdTRUE;
 
@@ -614,7 +624,7 @@ static Socket_t prvOpenTCPServerSocket( uint16_t usPort )
 
 static void prvGracefulShutdown( Socket_t xSocket )
 {
-TickType_t xTimeOnShutdown;
+	TickType_t xTimeOnShutdown;
 
 	/* Initiate a shutdown in case it has not already been initiated. */
 	FreeRTOS_shutdown( xSocket, FREERTOS_SHUT_RDWR );
@@ -640,6 +650,7 @@ void prvTCPCpmIOTask( void *ram )
 	static const TickType_t xReceiveTimeOut =  pdMS_TO_TICKS(1000);
 	static const TickType_t xTransmitTimeOut = pdMS_TO_TICKS(1000);
 	BaseType_t iosize;
+
 	char cRxedChar, cInputIndex = 0;
 	struct freertos_sockaddr xClient;
 	Socket_t xListeningSocket;
@@ -661,7 +672,7 @@ void prvTCPCpmIOTask( void *ram )
 	/* Set a time out so accept() will just wait for a connection. */
 	FreeRTOS_setsockopt( xSocketRDisk, 0, FREERTOS_SO_RCVTIMEO, &xReceiveTimeOut, sizeof( xReceiveTimeOut ) );
 	FreeRTOS_setsockopt( xSocketRDisk, 0, FREERTOS_SO_SNDTIMEO, &xTransmitTimeOut, sizeof( xTransmitTimeOut ) );
-	
+
 	for( ;; )
 	{
 		/* Attempt to open the socket.  The port number is passed in the task
@@ -680,7 +691,7 @@ void prvTCPCpmIOTask( void *ram )
 
 		/* Wait for an incoming connection. */
 		xConnectedSocket = FreeRTOS_accept( xListeningSocket, &xClient, &xSize );
-		
+
 		/* The FREERTOS_SO_REUSE_LISTEN_SOCKET option is set, so the
 		connected and listening socket should be the same socket. */
 		configASSERT( xConnectedSocket == xListeningSocket );
@@ -709,7 +720,7 @@ void prvTCPCpmIOTask( void *ram )
 
 			if( iosize >= 0 )
 			{
-				xQueueSend(cpminq,&c,0);		
+				xQueueSend(cpminq,&c,0);
 			}
 			else
 			{
@@ -722,6 +733,4 @@ void prvTCPCpmIOTask( void *ram )
 		/* Close the socket correctly. */
 		prvGracefulShutdown( xListeningSocket );
 	}
-}
-
-
+}
