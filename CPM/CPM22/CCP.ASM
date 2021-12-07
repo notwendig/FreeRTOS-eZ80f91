@@ -1,7 +1,5 @@
 	include CPM.INC
 	
-	xref PATTRN2
-	
 ;**************************************************************
 ;*
 ;*             C P / M   version   2 . 2
@@ -20,8 +18,6 @@
 ;
 ;   Set origin for CP/M
 ;
-	SEGMENT CPM22
-	.assume adl=0
 	ORG	CCP
 	
 ;
@@ -1207,8 +1203,14 @@ NBYTES:	DW	0		;byte counter used by TYPE.
 ;
 ;   Room for expansion?
 ;
-	DEFB	0,0,0,0,0,0,0,0,0,0,0,0,0
+	DS	BDOS - 6 - $,0
 
+PATTRN2:
+
+.if $ <> BDOS-6
+	.error
+.endif
+_CCPEND	equ $
 	END
 	
 

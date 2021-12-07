@@ -16,9 +16,11 @@
 #include "ez80_rtc.h"
 #include "ez80_ntp.h"
 #include "ez80_buttons.h"
-#include "monitor\monitor.h"
+#include "monitor.h"
 #include "time.h"
 
+#include "uzlib.h"
+#include "CPM22_A.h"
 
 #ifndef  _MULTI_THREAD
 #error _MULTI_THREAD must by defined
@@ -124,18 +126,33 @@ int main(int argc, void *argv[])
 	
 	TTYInit();
 	puts("\033[2J\x1b[9;0H eZ80 tty");
-	
+#if 0
+{
+	size_t slen = cpm22img_length-4;
+	size_t dlen = *(uint32_t*)((size_t) cpm22img + slen);
+	uint8_t*  ramdisk = pvPortMalloc(dlen); 
+	if(ramdisk)
+	{
+		int uz;
+		memset(ramdisk,0xAA,dlen);
+		uz = uzip(ramdisk,dlen,cpm22img,slen,NULL,0);
+		if(TINF_DONE == uz)
+			puts("OK");
+		else
+			puts("ERR");
+	}							
+}
+#endif
 	initRTC();
 	initButtons();
 	initLED5x7();
-	printf("%lX->%lX->%ip\n",0x11223344UL,portFreeRTOS_htonl(0x11223344UL),portFreeRTOS_htonl(0x11223344UL));
+
 	res = FreeRTOS_IPInit( ucIPAddress, ucNetMask, ucGatewayAddress, ucDNSServerAddress, ucMACAddress );
 	initConsole();
 	
-
 	res = xTaskCreate( TaskLED, "TaskLED", configMINIMAL_STACK_SIZE, (void *)portMAX_DELAY, 3, NULL);
 
-	vStartNTPTask( 2048, 4 );
+//	vStartNTPTask( 2048, 4 );
 	res = xTaskCreate(PutchThread, "PutchThreadA", 2048, (void*)'A', 2, &hndlA);
 	res = xTaskCreate(PutchThread, "PutchThreadB", 2048, (void*)'B', 3, &hndlB);
 	vRegisterCLICommands();

@@ -17,6 +17,8 @@ your application. */
 #define PRINTF_DISABLE_SUPPORT_PTRDIFF_T
 #define	configPRINTFTIMEOUT portMAX_DELAY //pdMS_TO_TICKS(300)
 
+int uzip(uint8_t *dest, size_t dlen, const uint8_t *source, size_t slen);
+
 #define pdMS_TO_TICKS( xTimeInMs ) ( TickType_t ) ((xTimeInMs) * portTICK_PERIOD_MS)
 
 #define	configTXQUEUE_LENGTH					80

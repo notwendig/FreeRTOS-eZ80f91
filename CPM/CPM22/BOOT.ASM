@@ -1,14 +1,11 @@
-	include CPM.INC
+include CPM.INC
 
-	xref	BOOT
 SIZE:    EQU     (10000h-CCP)  	; size of cp/m system
 SECTS:   EQU     32h			;(SIZE / 128)   ; # of sectors to load
 
-	SEGMENT CPM22
-	.assume adl=0
-	ORG	CCP-128
+	ORG	LOADER
 	
-	xdef	_loader
+
 _loader:LD		SP,80h
 		CALL	cprn
 		DB 		"CP/M 2.2 Loader v1.0 ",0
@@ -31,13 +28,13 @@ NEXTS:	LD		A,'.'
 		INC     L               ; sector = sector + 1
 		LD      A,L
 		CP      27              ; last sector of track ?
-		JR      C,$F	        ; no, go read another
+		JR      C,$F1	        ; no, go read another
 ;
 ;       end of track, increment to next track
 ;
 		LD      L,1             ; sector = 1
 		INC     H               ; track = track + 1
-$$: 	XOR     A
+$F1: 	XOR     A
 		LD		B,A
 		LD		C,H				; set track
 		EXBIOS  FDIO, 0, FDCTBC
@@ -61,13 +58,21 @@ $$: 	XOR     A
 EXMON:	EXBIOS  MONITOR, 0, 0	; build-in monitor
 
 cprn:	POP		HL
-$$:		LD		A,(HL)
+$B1:	LD		A,(HL)
 		INC		HL
 		OR		A
-		JR		Z,$F
+		JR		Z,$F2
 		EXBIOS	CONIO, 0, CONDAT
-		JR		$B	
-$$:		JP		(HL)
-loaderend:		
+		JR		$B1
+$F2:	JP		(HL)
+
+.if $ < 80h
+		DS _loader + 80h - $,0
+.endif
+
+.if $ <> _loader + 80h
+	.error
+.endif
+_LOADEREND	equ	$	
 
 	END

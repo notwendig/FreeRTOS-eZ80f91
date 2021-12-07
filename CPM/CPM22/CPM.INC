@@ -12,7 +12,27 @@ CCP:		EQU	3400H+BIAS	;base of ccp
 BDOS:	EQU	CCP+806H	;base of bdos
 BIOS:	EQU	CCP+1600H	;base of bios
 CDISK:	EQU	0004H		;current disk number 0=A,...,15=P
-
+LOADER: EQU 0DC00h		;Bootloader entry after start
+;
+;   BIOS entrys
+;
+BOOT 	equ BIOS+3*0   ;cold start
+WBOOT 	equ BIOS+3*1   ;warm start
+CONST 	equ BIOS+3*2   ;console status
+CONIN 	equ BIOS+3*3   ;console character in
+CONOUT  equ BIOS+3*4   ;console character out
+PLIST 	equ BIOS+3*5   ;list character out
+PUNCH 	equ BIOS+3*6   ;punch character out
+READER  equ BIOS+3*7   ;reader character out
+HOME 	equ BIOS+3*8   ;move head to home position
+SELDSK  equ BIOS+3*9   ;select disk
+SETTRK  equ BIOS+3*10  ;set track number
+SETSEC  equ BIOS+3*11  ;set sector number
+SETDMA  equ BIOS+3*12  ;set dma address
+READ 	equ BIOS+3*13  ;read disk
+WRITE 	equ BIOS+3*14  ;write disk
+LISTST  equ BIOS+3*15  ;return list status
+SECTRN  equ BIOS+3*16  ;sector translate
 
 ;
 ;	I/O ports
@@ -74,7 +94,7 @@ TFCB	EQU	5CH		;default file control block.
 TBUFF	EQU	80H		;i/o buffer and command line storage.
 TBASE	EQU	100H		;transiant program storage area.
 
-    define CPM22,space=ROM
+
 SERIALNO macro
 		db	0,22,0,0,0,0
-		endmac
+		endm

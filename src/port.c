@@ -9,6 +9,7 @@
 #include "portable.h"
 #include "task.h"
 #include "semphr.h"
+#include "uzlib.h"
 #include <eZ80F91.h>
 #include <stdlib.h>
 #include <Stdio.h>
@@ -22,9 +23,6 @@
 HeapRegion_t xHeapRegions[] =
 {
   { 0, 0 }, 
-#ifdef _DEBUG  
-  { ( uint8_t * ) 0xB80000, 0x80000 }, 
-#endif  
   { NULL, 0 }
 };
 
@@ -33,6 +31,9 @@ void portSetup()
 	xHeapRegions[0].pucStartAddress = &_heapbot;
 	xHeapRegions[0].xSizeInBytes = (unsigned)&_heaptop - (unsigned)&_heapbot;
 	vPortDefineHeapRegions(xHeapRegions);
+	
+	uzlib_init();
+ 
 }
 
 int tolower(int c);
@@ -94,24 +95,27 @@ void * malloc(size_t size)
 	return pvPortMalloc(size);
 }
 
-#if 0
-int snprintf(char *buf, size_t n, const char*fmt, ...)
+void * calloc(int num, size_t size)
 {
-  int ret;	
-  char *tmp = pvPortMalloc(2048);
-  va_list va;
-  va_start(va, fmt);
-  configASSERT( ( !tmp ));
-  ret = vsprintf(tmp,fmt,va);
-  if(ret != -1)
-  {
-	  configASSERT( ( ret >= 2048 || ret >= n));
-	  memcpy(buf,tmp,ret);
-  }	  
-  vPortFree(tmp);
-  return ret;  
+	void *tmp = pvPortMalloc(num*size);
+	if(tmp)
+	{
+		memset(tmp,0,num*size);
+	}
+	return tmp;
 }
-#endif
+
+void * realloc(void *old, size_t size)
+{
+	void *tmp = pvPortMalloc(size);
+	if(tmp)
+	{
+		memcpy(tmp,old,size);
+		vPortFree(old);
+	}
+	return tmp;
+}
+
 
 /*
  * Setup valid stack-frame for a new task and return top of frame.

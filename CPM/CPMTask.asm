@@ -1,7 +1,7 @@
 	.include "cpm.inc"
-	
-	xref	_loader	
-	
+
+	xref _cpm22img
+
 	SEGMENT BSS
 	
 	.align 10000h
@@ -10,39 +10,28 @@ _cpmram:	ds 10000h
 	
 	SEGMENT code
 	.assume adl=0
-bootstrap:	LD		SP,_loader
-			CALL	cprn - $ +3
-			DB 		"BOOTSTRAP v1.0.0",CR,LF,0
-			;XOR		A				; a=0 select drive A
-			SBC		HL,HL			; HL=0 IBM 3740 default dph
-			LD		BC,HL			
+	
+bootstrap:	ld		sp,0
+			xor		a,a			; a =0 select drive A
+			sbc		hl,hl		; HL=0 IBM 3740 default dph
+			push	hl
 			EXBIOS  FDIO, 0, FDCD	; select drive a
 			EXBIOS  FDIO, 1, FDCST  ; get status of fdc
-			OR		A,A
-			JR		NZ,$F			; build-in monitor
-			EXBIOS  FDIO, 0, FDCTBC	; set track 0
-			INC		C
-			EXBIOS  FDIO, 0, FDCSBC	; set sector 1
-			LD		BC,_loader		
-			EXBIOS  DMAIO, 0, DMABC	; set dma at tbase
+			or		a,a
+			pop		bc
+			jr		nz,monitor
+			EXBIOS  FDIO, 0, FDCTBC
+			inc		c
+			EXBIOS  FDIO, 0, FDCSBC
+			ld		bc,LOADER	; set dma
+			EXBIOS  DMAIO, 0, DMABC
 			EXBIOS  FDIO, 0, FDCOP	; a=0 => read sector
 			EXBIOS  FDIO, 1, FDCST  ; get status of fdc
-			OR      A               ; read successful ?
-			JP		Z,_loader
-$$:			NOP
-			EXBIOS  MONITOR, 0, 0	
-cprn:		POP		HL
-$$:			LD		A,(HL)
-			INC		HL
-			OR		A
-			JR		Z,$F
-			EXBIOS	CONIO, 0, CONDAT
-			JR		$B	
-$$:			PUSH	HL
-			RET
-			
-bootmsg:	
-bootstrapend:
+			or		a,a
+			jp		z,LOADER
+monitor:	EXBIOS  MONITOR, 0, 0	; build-in monitor
+			halt
+endbootstrap:
 	
 	.assume adl=1
 
@@ -52,9 +41,10 @@ _CPM22Task:	push	ix
 			add		ix,sp
 			ld 		hl, bootstrap
 			ld 		de, (ix+6)								
-			ld 		bc, bootstrapend - bootstrap
+			ld		d, 0
+			ld		e, 0
+			ld 		bc, endbootstrap-bootstrap
 			ldir										
 			ld 		a,(ix+8)									
 			ld 		mb,a									
-			ld 		hl, (ix+6)									
-			jp.s	(hl)
+			jp.s	0
