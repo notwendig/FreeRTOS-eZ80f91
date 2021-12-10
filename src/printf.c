@@ -951,7 +951,7 @@ static int _vsnprintf(out_fct_type out, char* buffer, const size_t maxlen, const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int printf_(const char* format, ...)
+int printf(const char* format, ...)
 {
   char buffer[1];
   int ret;
@@ -962,7 +962,7 @@ int printf_(const char* format, ...)
   return ret;
 }
 
-int dbg_printf_(const char* format, ...)
+int dbg_printf(const char* format, ...)
 {
   char buffer[1];
   int ret;
@@ -978,7 +978,7 @@ int puts(char *s)
 	return printf("%s\n", s);
 } 
 
-int sprintf_(char* buffer, const char* format, ...)
+int sprintf(char* buffer, const char* format, ...)
 {
   int ret;
   va_list va;
@@ -989,7 +989,7 @@ int sprintf_(char* buffer, const char* format, ...)
 }
 
 
-int snprintf_(char* buffer, size_t count, const char* format, ...)
+int snprintf(char* buffer, size_t count, const char* format, ...)
 {
   int ret;
   va_list va;
@@ -1000,14 +1000,14 @@ int snprintf_(char* buffer, size_t count, const char* format, ...)
 }
 
 
-int vprintf_(const char* format, va_list va)
+int vprintf(const char* format, va_list va)
 {
   char buffer[1];
   return _vsnprintf(_out_char, buffer, (size_t)-1, format, va);
 }
 
 
-int vsnprintf_(char* buffer, size_t count, const char* format, va_list va)
+int vsnprintf(char* buffer, size_t count, const char* format, va_list va)
 {
   return _vsnprintf(_out_buffer, buffer, count, format, va);
 }

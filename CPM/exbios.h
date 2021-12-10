@@ -142,10 +142,12 @@ typedef enum {
 	FDIO,
 	DMAIO,
 	ROMBOOT,
+	BDOSCALL,
 	MAXIO
 } xebioscall_t;
 
 void prvTCPCpmIOTask( void *ram );
 uint8_t* exbioscall(trapframe_t* arg);
 uint8_t* farptr(uint8_t *nearptr);	
+uint8_t* ConsoleIO(trapframe_t *context, char dir, port_CONIO_t port);
 #endif  // _EXBIOS_H_
