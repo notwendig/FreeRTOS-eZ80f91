@@ -1,3 +1,4 @@
+
 ;	CBIOS for eZ80 Z80-Mixed-Mode
 ;
 ;	Copyright (C) 1998-2021 by Juergen Sievers
@@ -8,7 +9,7 @@ MEM:		EQU	64	;cp/m version memory size in kilobytes
 ;	than 16K (referred to as "b" throughout the text).
 ;
 BIAS:	EQU	(MEM-20)*1024
-CCP:		EQU	3400H+BIAS	;base of ccp
+CCP:	EQU	3400H+BIAS	;base of ccp
 BDOS:	EQU	CCP+806H	;base of bdos
 BIOS:	EQU	CCP+1600H	;base of bios
 CDISK:	EQU	0004H		;current disk number 0=A,...,15=P
@@ -57,6 +58,7 @@ DMAIO:	EQU 33h		; DMA Device
 DMABC:	EQU	01h		;dma-port: dma address BC
 
 ROMBOOT:EQU	34h		; boot buildin CP/M 2.2
+BDOSCALL:EQU 35h
 
 PORTOUT:EQU	0
 PORTINP:EQU	1
@@ -64,7 +66,7 @@ PORTINP:EQU	1
 ; Execute ADL=1 mode code from ADL=0 mode (plain Z80-mode) code by casing a trap exception.
 ; Macro to tram ez80f91 on z80 mixed mode
 ; for simulat io
-; $cb, device ($30..$34), direction (0=in,1=out), port
+; $cb, device ($30..$35), direction (0=in,1=out), port
 EXBIOS  MACRO device, direction, port
 	db	0cbh, device, direction, port
 	ENDM

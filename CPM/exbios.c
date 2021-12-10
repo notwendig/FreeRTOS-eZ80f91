@@ -106,18 +106,22 @@
 #include "exbios.h"
 #include "cpmrdsk.h"
 #include "exbios.h"
+#include "zsidbdos.h"
 #include <string.h>
 #include "printf.h"
 #include "uzlib.h"
 #include "CPM22_A.h"
+#include "minimon.h"
 
-#define	VERSION "(C) 2021 v1.0.1 "
+#define	VERSION "(C) 2021 v2.0.0 "
 
 // CP/M 2.2 console in queue
 static QueueHandle_t cpminq;
 
 static Socket_t xConnectedSocket = (Socket_t)-1;
 static const char pcLoadRamdiskMessage[] = "Be patient decompressing and loading of the Ramdisk takes a while.\n\r";
+static const char pcLoadMonitorMessage[] = "Starting ZSID stand alone.\n\r";
+#define MINIMON 0x4000
 static const char pcWelcomeMessage[] = "\n\rEZ80F91 CP/M 2.2 Console " VERSION "\n\r";
 
 static TaskHandle_t thcpm;
@@ -175,25 +179,31 @@ uint8_t* farptr(uint8_t *nearptr)
 }
 
 
+// Injecting and run an Z80 Mashine-Monitor
 uint8_t *z80Monitor(trapframe_t *context)
 {
-	// ToDo: inject and run an Z80 Mashine-Monitor
-	FreeRTOS_debug_printf(("CP/M mashin-montor not supported yet."));
-	vTaskDelay(pdMS_TO_TICKS(1000));
-	configASSERT(0);
-	(*context->pc)++;
+	size_t slen = minimonz_length-4;
+	size_t dlen = *(uint32_t*)((size_t) minimonz + slen);
+	uint8_t *minimon = farptr((uint8_t*)MINIMON);
+	int uz = uzip(minimon,dlen,minimonz,slen);
+	
+	FreeRTOS_debug_printf(("%s at address %4.4X",pcLoadMonitorMessage,MINIMON));
+	FreeRTOS_send( xConnectedSocket,  ( void * ) pcLoadMonitorMessage,  strlen( pcLoadMonitorMessage ), 0 );
+	if(TINF_OK == uz)
+		*context->pc = minimon;
+	else
+		*context->pc = 0;
 	return *context->pc;
 }
 
-uint8_t *z80BiosConsoleIO(trapframe_t *context)
+uint8_t *ConsoleIO(trapframe_t *context, char dir, port_CONIO_t port)
 {
-	char dir = *farptr((*context->pc)++);
 	char c = context->af >> 8;
 
 	if(dir)	// input
 	{
 		context->af &= 0xFF;
-		switch((port_CONIO_t) *farptr((*context->pc)++))
+		switch(port)
 		{
 			case CONSTA:	// console status port
 				if(xQueuePeek(cpminq,&c,0) == pdTRUE)
@@ -211,7 +221,7 @@ uint8_t *z80BiosConsoleIO(trapframe_t *context)
 		}
 	}
 	else	// output
-		switch((port_CONIO_t) *farptr((*context->pc)++))
+		switch(port)
 		{
 			case CONDAT:	// console data port
 				FreeRTOS_send(xConnectedSocket,&c,1,0);
@@ -226,9 +236,16 @@ uint8_t *z80BiosConsoleIO(trapframe_t *context)
 	return *context->pc;
 }
 
+static uint8_t *z80BiosConsoleIO(trapframe_t *context)
+{
+	char dir = *farptr((*context->pc)++);
+	port_CONIO_t port = (port_CONIO_t) *farptr((*context->pc)++);
+	return ConsoleIO(context, dir, port);
+}
+
 static const pdu_t *doRamDiskReq(pdu_t *req)
 {
-	uint8_t *offset;
+	size_t offset;
 	pdu_t *rsp = 0;
 
 	if(ramdisk)
@@ -251,12 +268,12 @@ static const pdu_t *doRamDiskReq(pdu_t *req)
 
 				if(rsp)
 				{
+					uint8_t sect = req->d.ioreq.sect - 1;
 					memcpy(rsp,req,sizeof(hdr_t) + sizeof(ioreq_t) - SECTORSZ);
-					if(req->d.ioreq.sect && req->d.ioreq.sect <= 26)
+					if(sect < 26)
 					{
-						uint8_t sect = req->d.ioreq.sect;
-						offset = (uint8_t*)((req->d.ioreq.track * 26 + sect -1) * SECTORSZ);
-						memcpy(rsp->d.ioreq.data,(const char*)((unsigned)ramdisk+offset),SECTORSZ);
+						offset = (req->d.ioreq.track * 26 + sect) * SECTORSZ;
+						memcpy(rsp->d.ioreq.data,ramdisk+offset,SECTORSZ);
 					}
 					else
 						rsp->hdr.cmdid |= RDSK_ErrorFlag;
@@ -267,13 +284,12 @@ static const pdu_t *doRamDiskReq(pdu_t *req)
 
 				if(rsp)
 				{
+					uint8_t sect = req->d.ioreq.sect - 1;
 					memcpy(rsp,req,sizeof(hdr_t) + sizeof(ioreq_t) - SECTORSZ);
-					if(req->d.ioreq.sect && req->d.ioreq.sect <= 26)
+					if(sect < 26)
 					{
-						uint8_t sect = req->d.ioreq.sect;
-						offset = (uint8_t*)((req->d.ioreq.track * 26 + sect -1) * SECTORSZ);
-
-						memcpy((char*)((unsigned)ramdisk+offset), req->d.ioreq.data,SECTORSZ);
+						offset = (req->d.ioreq.track * 26 + sect) * SECTORSZ;
+						memcpy(ramdisk+offset, req->d.ioreq.data,SECTORSZ);
 					}
 					else
 						rsp->hdr.cmdid |= RDSK_ErrorFlag;
@@ -575,6 +591,9 @@ uint8_t *exbioscall(trapframe_t* arg)
 		break;
 		case ROMBOOT:
 		//	Romboot(arg);
+		break;
+		case BDOSCALL:
+			bdos(arg);
 		break;
 		default:
 			configASSERT(0);

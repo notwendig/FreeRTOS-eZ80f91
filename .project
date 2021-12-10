@@ -26,11 +26,6 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>CPM</name>
-			<type>2</type>
-			<location>/home/juergen/ZiLOG/workspace/CPM</location>
-		</link>
-		<link>
 			<name>FreeRTOS</name>
 			<type>2</type>
 			<location>/home/juergen/Z::/workspace/FreeRTOS</location>
