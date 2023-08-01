@@ -1,0 +1,64 @@
+From b7225149c24529d38de9d42ea685df0b3013b2ff Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?J=C3=BCrgen=20Willi=20Sievers?= <JSievers@NadiSoft.de>
+Date: Wed, 2 Aug 2023 10:02:37 +0200
+Subject: [PATCH] Fix for Compiler ez80cc Acclaim
+
+---
+ .gitignore                | 2 ++
+ portable/MemMang/heap_5.c | 2 +-
+ tasks.c                   | 3 ---
+ timers.c                  | 2 +-
+ 4 files changed, 4 insertions(+), 5 deletions(-)
+ create mode 100644 .gitignore
+
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 000000000..ac01e665d
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,2 @@
++/Debug/
++/Release/
+diff --git a/portable/MemMang/heap_5.c b/portable/MemMang/heap_5.c
+index bddc37c21..f462ec0eb 100644
+--- a/portable/MemMang/heap_5.c
++++ b/portable/MemMang/heap_5.c
+@@ -138,7 +138,7 @@ static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert );
+ 
+ /* The size of the structure placed at the beginning of each allocated memory
+  * block must by correctly byte aligned. */
+-static const size_t xHeapStructSize = ( sizeof( BlockLink_t ) + ( ( size_t ) ( portBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
++const size_t xHeapStructSize = ( sizeof( BlockLink_t ) + ( ( size_t ) ( portBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
+ 
+ /* Create a couple of list links to mark the start and end of the list. */
+ static BlockLink_t xStart;
+diff --git a/tasks.c b/tasks.c
+index 2c169d5b5..1e7e39510 100644
+--- a/tasks.c
++++ b/tasks.c
+@@ -2084,9 +2084,6 @@ void vTaskStartScheduler( void )
+      * meaning xIdleTaskHandle is not used anywhere else. */
+     ( void ) xIdleTaskHandle;
+ 
+-    /* OpenOCD makes use of uxTopUsedPriority for thread debugging. Prevent uxTopUsedPriority
+-     * from getting optimized out as it is no longer used by the kernel. */
+-    ( void ) uxTopUsedPriority;
+ }
+ /*-----------------------------------------------------------*/
+ 
+diff --git a/timers.c b/timers.c
+index c78c93443..23763a099 100644
+--- a/timers.c
++++ b/timers.c
+@@ -971,7 +971,7 @@
+                     /* The timer queue is allocated statically in case
+                      * configSUPPORT_DYNAMIC_ALLOCATION is 0. */
+                     PRIVILEGED_DATA static StaticQueue_t xStaticTimerQueue;                                                                          /*lint !e956 Ok to declare in this manner to prevent additional conditional compilation guards in other locations. */
+-                    PRIVILEGED_DATA static uint8_t ucStaticTimerQueueStorage[ ( size_t ) configTIMER_QUEUE_LENGTH * sizeof( DaemonTaskMessage_t ) ]; /*lint !e956 Ok to declare in this manner to prevent additional conditional compilation guards in other locations. */
++                    PRIVILEGED_DATA static uint8_t ucStaticTimerQueueStorage[ configTIMER_QUEUE_LENGTH * sizeof( DaemonTaskMessage_t ) ]; /*lint !e956 Ok to declare in this manner to prevent additional conditional compilation guards in other locations. */
+ 
+                     xTimerQueue = xQueueCreateStatic( ( UBaseType_t ) configTIMER_QUEUE_LENGTH, ( UBaseType_t ) sizeof( DaemonTaskMessage_t ), &( ucStaticTimerQueueStorage[ 0 ] ), &xStaticTimerQueue );
+                 }
+-- 
+2.41.0
+

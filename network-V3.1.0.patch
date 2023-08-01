@@ -1,0 +1,37 @@
+From 632ded6a6feda92a99f4eb7229df936f1627f7a1 Mon Sep 17 00:00:00 2001
+From: Aniruddha Kanhere <60444055+AniruddhaKanhere@users.noreply.github.com>
+Date: Thu, 13 Oct 2022 17:33:19 +0000
+Subject: [PATCH] Update README to add link to LTS 2.0 release.
+
+---
+ .gitignore | 6 +++---
+ README.md  | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/.gitignore b/.gitignore
+index 3084e83..a45c4da 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,3 +1,3 @@
+-**/*.d
+-**/*.o
+-**/*.su
++**/Debug/
++**/Release/
++
+diff --git a/README.md b/README.md
+index d6c84f0..7c6ee16 100644
+--- a/README.md
++++ b/README.md
+@@ -8,7 +8,7 @@ The easiest way to use FreeRTOS-Plus-TCP is to start with the pre-configured dem
+ 
+ Additionally, for FreeRTOS-Plus-TCP source code organization refer to the [Documentation](http://www.FreeRTOS.org/FreeRTOS-Plus/FreeRTOS_Plus_TCP/TCP_Networking_Tutorial.html), and [API Reference](https://freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_TCP/FreeRTOS_TCP_API_Functions.html).
+ 
+-FreeRTOS-Plus-TCP V2.3.2-LTS-Patch-2 [source code](https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/tree/V2.3.2-LTS-Patch-2)(.c .h) is part of the [FreeRTOS 202012.04 LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.04-LTS) release.
++**FreeRTOS-Plus-TCP V3.1.0 [source code](https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/tree/V3.1.0)(.c .h) is part of the [FreeRTOS 202210.00 LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202210.00-LTS) release.**
+ 
+ ### Getting help
+ If you have any questions or need assistance troubleshooting your FreeRTOS project, we have an active community that can help on the [FreeRTOS Community Support Forum](https://forums.freertos.org). Please also refer to [FAQ](http://www.freertos.org/FAQHelp.html) for frequently asked questions.
+-- 
+2.41.0
+
