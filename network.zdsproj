@@ -3,16 +3,27 @@
 
 <!-- file information -->
 <files>
-<file filter-key="">network\FreeRTOS_ARP.c</file>
-<file filter-key="">network\FreeRTOS_DHCP.c</file>
-<file filter-key="">network\FreeRTOS_DNS.c</file>
-<file filter-key="">network\FreeRTOS_IP.c</file>
-<file filter-key="">network\FreeRTOS_Sockets.c</file>
-<file filter-key="">network\FreeRTOS_Stream_Buffer.c</file>
-<file filter-key="">network\FreeRTOS_TCP_IP.c</file>
-<file filter-key="">network\FreeRTOS_TCP_WIN.c</file>
-<file filter-key="">network\FreeRTOS_UDP_IP.c</file>
-<file filter-key="">network\portable\BufferManagement\BufferAllocation_2.c</file>
+<file filter-key="">network\source\portable\BufferManagement\BufferAllocation_2.c</file>
+<file filter-key="">network\source\FreeRTOS_ARP.c</file>
+<file filter-key="">network\source\FreeRTOS_DHCP.c</file>
+<file filter-key="">network\source\FreeRTOS_DNS.c</file>
+<file filter-key="">network\source\FreeRTOS_DNS_Cache.c</file>
+<file filter-key="">network\source\FreeRTOS_DNS_Callback.c</file>
+<file filter-key="">network\source\FreeRTOS_DNS_Networking.c</file>
+<file filter-key="">network\source\FreeRTOS_DNS_Parser.c</file>
+<file filter-key="">network\source\FreeRTOS_ICMP.c</file>
+<file filter-key="">network\source\FreeRTOS_IP.c</file>
+<file filter-key="">network\source\FreeRTOS_IP_Timers.c</file>
+<file filter-key="">network\source\FreeRTOS_IP_Utils.c</file>
+<file filter-key="">network\source\FreeRTOS_Sockets.c</file>
+<file filter-key="">network\source\FreeRTOS_Stream_Buffer.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_IP.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_Reception.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_State_Handling.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_Transmission.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_Utils.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_WIN.c</file>
+<file filter-key="">network\source\FreeRTOS_UDP_IP.c</file>
 </files>
 
 <!-- configuration information -->
@@ -45,7 +56,7 @@
 <option name="optspeed" type="boolean" change-action="compile">false</option>
 <option name="promote" type="boolean" change-action="compile">true</option>
 <option name="reduceopt" type="boolean" change-action="compile">false</option>
-<option name="stdinc" type="string" change-action="compile">network\include;kernel\include;EZ80F910300ZCOG\inc</option>
+<option name="stdinc" type="string" change-action="compile">network\source\include;kernel\include;EZ80F910300ZCOG\inc</option>
 <option name="usrinc" type="string" change-action="compile"></option>
 <option name="watch" type="boolean" change-action="none">false</option>
 <option name="multithread" type="boolean" change-action="compile">true</option>
@@ -165,7 +176,7 @@
 <option name="optspeed" type="boolean" change-action="compile">false</option>
 <option name="promote" type="boolean" change-action="compile">true</option>
 <option name="reduceopt" type="boolean" change-action="compile">false</option>
-<option name="stdinc" type="string" change-action="compile">network\include;kernel\include;EZ80F910300ZCOG\inc</option>
+<option name="stdinc" type="string" change-action="compile">network\source\include;kernel\include;EZ80F910300ZCOG\inc</option>
 <option name="usrinc" type="string" change-action="compile"></option>
 <option name="watch" type="boolean" change-action="none">false</option>
 <option name="multithread" type="boolean" change-action="compile">true</option>

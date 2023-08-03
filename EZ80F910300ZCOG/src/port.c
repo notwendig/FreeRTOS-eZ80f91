@@ -22,7 +22,8 @@
 //uint8_t ucHeap[configTOTAL_HEAP_SIZE] _At 0xB80000;
 HeapRegion_t xHeapRegions[] =
 {
-  { 0, 0 }, 
+  { NULL, 0 }, 
+  { NULL, 0 }, 
   { NULL, 0 }
 };
 
@@ -30,6 +31,11 @@ void portSetup()
 {
 	xHeapRegions[0].pucStartAddress = &_heapbot;
 	xHeapRegions[0].xSizeInBytes = (unsigned)&_heaptop - (unsigned)&_heapbot;
+	#if MEMPART==RAMONLY
+	xHeapRegions[1].pucStartAddress = (void*) 0xb80000U;
+	xHeapRegions[1].xSizeInBytes = 0x80000U;
+	#endif
+	
 	vPortDefineHeapRegions(xHeapRegions);
 	
 	uzlib_init();
