@@ -1,12 +1,11 @@
-From 632ded6a6feda92a99f4eb7229df936f1627f7a1 Mon Sep 17 00:00:00 2001
-From: Aniruddha Kanhere <60444055+AniruddhaKanhere@users.noreply.github.com>
-Date: Thu, 13 Oct 2022 17:33:19 +0000
-Subject: [PATCH] Update README to add link to LTS 2.0 release.
-
----
- .gitignore | 6 +++---
- README.md  | 2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ .gitignore                                            | 6 +++---
+ source/FreeRTOS_ARP.c                                 | 3 ++-
+ source/FreeRTOS_DNS.c                                 | 4 +++-
+ source/FreeRTOS_IP.c                                  | 2 +-
+ source/FreeRTOS_TCP_IP.c                              | 3 ++-
+ source/FreeRTOS_UDP_IP.c                              | 3 ++-
+ source/portable/BufferManagement/BufferAllocation_2.c | 2 +-
+ 7 files changed, 14 insertions(+), 9 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 3084e83..a45c4da 100644
@@ -19,19 +18,121 @@ index 3084e83..a45c4da 100644
 +**/Debug/
 +**/Release/
 +
-diff --git a/README.md b/README.md
-index d6c84f0..7c6ee16 100644
---- a/README.md
-+++ b/README.md
-@@ -8,7 +8,7 @@ The easiest way to use FreeRTOS-Plus-TCP is to start with the pre-configured dem
+diff --git a/source/FreeRTOS_ARP.c b/source/FreeRTOS_ARP.c
+index 20aff6b..d4b2526 100644
+--- a/source/FreeRTOS_ARP.c
++++ b/source/FreeRTOS_ARP.c
+@@ -168,6 +168,7 @@ eFrameProcessingResult_t eARPProcessPacket( ARPPacket_t * const pxARPFrame )
+     /* Introduce a do while loop to allow use of breaks. */
+     do
+     {
++		uint32_t ulHostEndianProtocolAddr;
+         /* Only Ethernet hardware type is supported.
+          * Only IPv4 address can be present in the ARP packet.
+          * The hardware length (the MAC address) must be 6 bytes. And,
+@@ -193,7 +194,7 @@ eFrameProcessingResult_t eARPProcessPacket( ARPPacket_t * const pxARPFrame )
+             break;
+         }
  
- Additionally, for FreeRTOS-Plus-TCP source code organization refer to the [Documentation](http://www.FreeRTOS.org/FreeRTOS-Plus/FreeRTOS_Plus_TCP/TCP_Networking_Tutorial.html), and [API Reference](https://freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_TCP/FreeRTOS_TCP_API_Functions.html).
+-        uint32_t ulHostEndianProtocolAddr = FreeRTOS_ntohl( ulSenderProtocolAddress );
++       ulHostEndianProtocolAddr = FreeRTOS_ntohl( ulSenderProtocolAddress );
  
--FreeRTOS-Plus-TCP V2.3.2-LTS-Patch-2 [source code](https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/tree/V2.3.2-LTS-Patch-2)(.c .h) is part of the [FreeRTOS 202012.04 LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.04-LTS) release.
-+**FreeRTOS-Plus-TCP V3.1.0 [source code](https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/tree/V3.1.0)(.c .h) is part of the [FreeRTOS 202210.00 LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202210.00-LTS) release.**
+         if( ( ipFIRST_LOOPBACK_IPv4 <= ulHostEndianProtocolAddr ) &&
+             ( ulHostEndianProtocolAddr < ipLAST_LOOPBACK_IPv4 ) )
+diff --git a/source/FreeRTOS_DNS.c b/source/FreeRTOS_DNS.c
+index 87ca5c9..b0d6852 100644
+--- a/source/FreeRTOS_DNS.c
++++ b/source/FreeRTOS_DNS.c
+@@ -394,6 +394,7 @@
  
- ### Getting help
- If you have any questions or need assistance troubleshooting your FreeRTOS project, we have an active community that can help on the [FreeRTOS Community Support Forum](https://forums.freertos.org). Please also refer to [FAQ](http://www.freertos.org/FAQHelp.html) for frequently asked questions.
--- 
-2.41.0
-
+         /* Obtain the DNS server address. */
+         FreeRTOS_GetAddressConfiguration( NULL, NULL, NULL, &ulIPAddress );
++		{
+         #if ( ipconfigUSE_LLMNR == 1 )
+             BaseType_t bHasDot = llmnr_has_dot( pcHostName );
+ 
+@@ -412,6 +413,7 @@
+             pxAddress->sin_port = dnsDNS_PORT;
+         }
+     }
++    }
+ 
+ /*!
+  * @brief return ip address from the dns reply message
+@@ -579,7 +581,7 @@
+                                                   TickType_t uxIdentifier,
+                                                   Socket_t xDNSSocket )
+     {
+-        uint32_t ulIPAddress;
++        uint32_t ulIPAddress = 0U;
+         BaseType_t xAttempt;
+ 
+         for( xAttempt = 0; xAttempt < ipconfigDNS_REQUEST_ATTEMPTS; xAttempt++ )
+diff --git a/source/FreeRTOS_IP.c b/source/FreeRTOS_IP.c
+index 8efbbf5..7950b58 100644
+--- a/source/FreeRTOS_IP.c
++++ b/source/FreeRTOS_IP.c
+@@ -999,9 +999,9 @@ void FreeRTOS_ReleaseUDPPayloadBuffer( void const * pvBuffer )
+         uint8_t * pucChar;
+         size_t uxTotalLength;
+         IPStackEvent_t xStackTxEvent = { eStackTxEvent, NULL };
++        BaseType_t xEnoughSpace;
+ 
+         uxTotalLength = uxNumberOfBytesToSend + sizeof( ICMPPacket_t );
+-        BaseType_t xEnoughSpace;
+ 
+         if( uxNumberOfBytesToSend < ( ipconfigNETWORK_MTU - ( sizeof( IPHeader_t ) + sizeof( ICMPHeader_t ) ) ) )
+         {
+diff --git a/source/FreeRTOS_TCP_IP.c b/source/FreeRTOS_TCP_IP.c
+index 1b9451d..980c387 100644
+--- a/source/FreeRTOS_TCP_IP.c
++++ b/source/FreeRTOS_TCP_IP.c
+@@ -621,7 +621,7 @@
+ 
+         configASSERT( pxNetworkBuffer != NULL );
+         configASSERT( pxNetworkBuffer->pucEthernetBuffer != NULL );
+-
++{
+         /* Map the buffer onto a ProtocolHeaders_t struct for easy access to the fields. */
+ 
+         /* MISRA Ref 11.3.1 [Misaligned access] */
+@@ -863,6 +863,7 @@
+ 
+         /* pdPASS being returned means the buffer has been consumed. */
+         return xResult;
++	}
+     }
+     /*-----------------------------------------------------------*/
+ 
+diff --git a/source/FreeRTOS_UDP_IP.c b/source/FreeRTOS_UDP_IP.c
+index d8819da..be38bdb 100644
+--- a/source/FreeRTOS_UDP_IP.c
++++ b/source/FreeRTOS_UDP_IP.c
+@@ -315,7 +315,7 @@ BaseType_t xProcessReceivedUDPPacket( NetworkBufferDescriptor_t * pxNetworkBuffe
+     configASSERT( pxNetworkBuffer->pucEthernetBuffer != NULL );
+ 
+     /* Map the ethernet buffer to the UDPPacket_t struct for easy access to the fields. */
+-
++{
+     /* MISRA Ref 11.3.1 [Misaligned access] */
+ /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-113 */
+     /* coverity[misra_c_2012_rule_11_3_violation] */
+@@ -498,4 +498,5 @@ BaseType_t xProcessReceivedUDPPacket( NetworkBufferDescriptor_t * pxNetworkBuffe
+ 
+     return xReturn;
+ }
++}
+ /*-----------------------------------------------------------*/
+diff --git a/source/portable/BufferManagement/BufferAllocation_2.c b/source/portable/BufferManagement/BufferAllocation_2.c
+index bd8db4c..0abdaad 100644
+--- a/source/portable/BufferManagement/BufferAllocation_2.c
++++ b/source/portable/BufferManagement/BufferAllocation_2.c
+@@ -73,7 +73,7 @@
+     #define ASSERT_CONCAT_( a, b )    a ## b
+     #define ASSERT_CONCAT( a, b )     ASSERT_CONCAT_( a, b )
+     #define STATIC_ASSERT( e ) \
+-    ; enum { ASSERT_CONCAT( assert_line_, __LINE__ ) = 1 / ( !!( e ) ) }
++    enum { ASSERT_CONCAT( assert_line_, __LINE__ ) = 1 / ( !!( e ) ) }
+ 
+     STATIC_ASSERT( ipconfigETHERNET_MINIMUM_PACKET_BYTES <= baMINIMAL_BUFFER_SIZE );
+ #endif
