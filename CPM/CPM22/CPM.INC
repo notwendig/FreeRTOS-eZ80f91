@@ -10,31 +10,34 @@ MEM:		EQU	64	;cp/m version memory size in kilobytes
 ;
 BIAS:	EQU	(MEM-20)*1024
 CCP:	EQU	3400H+BIAS	;base of ccp
-BDOS:	EQU	CCP+806H	;base of bdos
+BDOS:	EQU	CCP+800H+6	;base of bdos
 BIOS:	EQU	CCP+1600H	;base of bios
+
+;    define MINIMON_, space=rom,org=8000h
+
+
 CDISK:	EQU	0004H		;current disk number 0=A,...,15=P
 
 ;
 ;   BIOS entrys
 ;
-BOOT 	equ BIOS+3*0   ;cold start
-WBOOT 	equ BIOS+3*1   ;warm start
-CONST 	equ BIOS+3*2   ;console status
-CONIN 	equ BIOS+3*3   ;console character in
-CONOUT  equ BIOS+3*4   ;console character out
-PLIST 	equ BIOS+3*5   ;list character out
-PUNCH 	equ BIOS+3*6   ;punch character out
-READER  equ BIOS+3*7   ;reader character out
-HOME 	equ BIOS+3*8   ;move head to home position
-SELDSK  equ BIOS+3*9   ;select disk
-SETTRK  equ BIOS+3*10  ;set track number
-SETSEC  equ BIOS+3*11  ;set sector number
-SETDMA  equ BIOS+3*12  ;set dma address
-READ 	equ BIOS+3*13  ;read disk
-WRITE 	equ BIOS+3*14  ;write disk
-LISTST  equ BIOS+3*15  ;return list status
-SECTRN  equ BIOS+3*16  ;sector translate
-
+	XREF BOOT
+	XREF WBOOT
+	XREF CONST
+	XREF CONIN
+	XREF CONOUT
+	XREF LISTN
+	XREF PUNCH
+	XREF READER
+	XREF HOME
+	XREF SELDSK
+	XREF SETTRK
+	XREF SETSEC
+	XREF SETDMA
+	XREF READ
+	XREF WRITE
+	XREF LISTST
+	XREF SECTRN
 ;
 ;   Set control character equates.
 ;

@@ -1,0 +1,167 @@
+
+IEEE 695 OMF Linker Version 6.25 (19073001)
+Copyright (C) 1999-2008 Zilog, Inc. All Rights Reserved
+
+LINK MAP:
+
+DATE:      Wed Aug 23 13:58:09 2023
+PROCESSOR: assembler
+FILES:     ./CPM22/BOOT.obj
+           ./CPM22/CCP.obj        
+           ./CPM22/BDOS.obj
+           ./CPM22/BIOS.obj
+
+
+COMMAND LIST:
+=============
+
+-FORMAT=OMF695,INTEL32
+-map -maxhexlen=64 -quiet -warnoverlap -xref -unresolved=fatal
+-sort ADDRESS=ascending -warn -debug -NOigcase -warning=fatal
+
+RANGE ROM $000000 : $001C5B
+/* RANGE RAM $000000 : $00FFFF */
+RANGE EXTIO $000000 : $00FFFF
+RANGE INTIO $000000 : $0000FF
+
+COPY _BOOT ROM At $000000
+COPY _CCP ROM At $000080
+COPY _BDOS ROM At $000080+$800
+COPY _BIOS ROM At $000080+$800+$E00
+
+
+"./CPM22"="./CPM22/BOOT.obj", "./CPM22/CCP.obj", "./CPM22/BDOS.obj", "./CPM22/BIOS.obj"
+
+SPACE ALLOCATION:
+=================
+
+Space                     Base         Top      Size      Used    Unused
+------------------ ----------- ----------- --------- --------- ---------
+RAM                 D:00000080  D:0000FFD9        0H     1C5AH FFFFE3A6H
+                                          (        0      7258     -7258)
+ROM                     C:0000      C:1C59     1C5CH     1C5AH        2H
+                                          (     7260      7258         2)
+
+
+SEGMENTS WITHIN SPACE:
+======================
+
+RAM                               Type        Base         Top      Size
+------------------ ------------------- ----------- ----------- ---------
+_BDOS              absolute data        D:0000EC00  D:0000F9FF      e00h
+_BIOS              absolute data        D:0000FA00  D:0000FFD9      5dah
+_BOOT              absolute data        D:00000080  D:000000FF       80h
+_CCP               absolute data        D:0000E400  D:0000EBFF      800h
+
+
+ROM                               Type        Base         Top      Size
+------------------ ------------------- ----------- ----------- ---------
+_BDOS              * segment copy *         C:0880      C:167F      e00h
+_BIOS              * segment copy *         C:1680      C:1C59      5dah
+_BOOT              * segment copy *         C:0000      C:007F       80h
+_CCP               * segment copy *         C:0080      C:087F      800h
+
+SEGMENTS WITHIN MODULES:
+========================
+
+Module: CPM22/BDOS.ASM (File: ./CPM22/BDOS.obj) Version: 1:0 08/23/2023 13:58:08
+
+    Name                                           Base         Top      Size
+    --------------------------------------- ----------- ----------- ---------
+    Segment: _BDOS                           D:0000EC00  D:0000F9FF      e00h
+
+
+Module: CPM22/BIOS.ASM (File: ./CPM22/BIOS.obj) Version: 1:0 08/23/2023 13:58:09
+
+    Name                                           Base         Top      Size
+    --------------------------------------- ----------- ----------- ---------
+    Segment: _BIOS                           D:0000FA00  D:0000FFD9      5dah
+
+
+Module: CPM22/BOOT.ASM (File: ./CPM22/BOOT.obj) Version: 1:0 08/23/2023 13:58:07
+
+    Name                                           Base         Top      Size
+    --------------------------------------- ----------- ----------- ---------
+    Segment: _BOOT                           D:00000080  D:000000FF       80h
+
+
+Module: CPM22/CCP.ASM (File: ./CPM22/CCP.obj) Version: 1:0 08/23/2023 13:58:08
+
+    Name                                           Base         Top      Size
+    --------------------------------------- ----------- ----------- ---------
+    Segment: _CCP                            D:0000E400  D:0000EBFF      800h
+
+EXTERNAL DEFINITIONS:
+=====================
+
+Symbol                               Address Module          Segment
+-------------------------------- ----------- --------------- --------------------------------
+BOOT                              D:0000FA00 CPM22/BIOS      _BIOS                           
+WBOOT                             D:0000FA03 CPM22/BIOS      _BIOS                           
+CONST                             D:0000FA06 CPM22/BIOS      _BIOS                           
+CONIN                             D:0000FA09 CPM22/BIOS      _BIOS                           
+CONOUT                            D:0000FA0C CPM22/BIOS      _BIOS                           
+LISTN                             D:0000FA0F CPM22/BIOS      _BIOS                           
+PUNCH                             D:0000FA12 CPM22/BIOS      _BIOS                           
+READER                            D:0000FA15 CPM22/BIOS      _BIOS                           
+HOME                              D:0000FA18 CPM22/BIOS      _BIOS                           
+SELDSK                            D:0000FA1B CPM22/BIOS      _BIOS                           
+SETTRK                            D:0000FA1E CPM22/BIOS      _BIOS                           
+SETSEC                            D:0000FA21 CPM22/BIOS      _BIOS                           
+SETDMA                            D:0000FA24 CPM22/BIOS      _BIOS                           
+READ                              D:0000FA27 CPM22/BIOS      _BIOS                           
+WRITE                             D:0000FA2A CPM22/BIOS      _BIOS                           
+LISTST                            D:0000FA2D CPM22/BIOS      _BIOS                           
+SECTRN                            D:0000FA30 CPM22/BIOS      _BIOS                           
+
+17 external symbol(s).
+
+SYMBOL CROSS REFERENCE:
+=======================
+Name                              Use         Module
+--------------------------------- ----------- -------------------------
+BOOT                              Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BOOT.ASM
+WBOOT                             Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+CONST                             Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+CONIN                             Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+CONOUT                            Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+LISTN                             Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+PUNCH                             Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+READER                            Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+HOME                              Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+SELDSK                            Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+SETTRK                            Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+SETSEC                            Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+SETDMA                            Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+READ                              Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+WRITE                             Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+LISTST                            Defined     CPM22/BIOS.ASM
+SECTRN                            Defined     CPM22/BIOS.ASM
+                                  Referenced  CPM22/BDOS.ASM
+
+OUTPUT CHECKSUM
+===============
+./CPM22.hex          0CDA64
+./CPM22.lod          0CDA64
+
+
+
+END OF LINK MAP:
+================
+0 Errors
+0 Warnings

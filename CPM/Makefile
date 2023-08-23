@@ -1,40 +1,47 @@
+
 SHELL=/bin/bash
 
-CPMFILES=./RAMDSK
-AFLAGS=-L -m -z --oo CIM,LST --dri
+CPMFILES:=./RAMDSK/*
+AFLAGS=-define:_EZ80ACCLAIM!=1 -define:CPM22 \
+		-list -NOlistmac -name -pagelen:0 -pagewidth:132 -quiet -sdiopt \
+		-warn -debug -NOigcase -cpu:eZ80F91
 
-AS=zmac
+ZRUN=WINEDEBUG=-all wine ~/ZiLOG/ZDSII_eZ80Acclaim!_5.3.5/bin
+AS=$(ZRUN)/ez80asm
+LN=$(ZRUN)/ez80link
 CAT=cat
 
 ASDIR=./CPM22
 ASRCS=BOOT.ASM CCP.ASM BDOS.ASM BIOS.ASM
-ACIMS=$(ASRCS:.ASM=.CIM)
+AOBJS=$(addprefix $(ASDIR)/,$(ASRCS:%.ASM=%.obj))
 
 current_dir := $(shell pwd)
 
-vpath %.ASM $(ASDIR) 
+vpath %.ASM $(ASDIR)
+vpath %.obj $(ASDIR)
 vpath %.INC $(ASDIR)
 
-all: CPM22_A.c
+all: clean CPM22_A.c
 
 # Compile Z80-Assembler to Z80-Binary
-%.CIM:%.ASM CPM.INC
-	$(AS) $(AFLAGS) -o $@ -o $(@:.CIM=.LST) $<
+%.obj:%.ASM CPM.INC
+	$(AS) $(AFLAGS) $<
 
 # Concatinate all CP/M Binarys (BOOT,CCP,BDOS,BIOS)
 # to system-track (52 sectors) imgage
-CPM.SYS:$(ACIMS)
-	$(CAT) $^ | dd of=$@ bs=128 count=52
+CPM.SYS:$(AOBJS)
+	$(LN) @CPM22.linkcmd
+	srec_cat CPM22.hex -Intel -Output $@ -Binary
 
-A.DSK:CPM.SYS $(CPMFILES)/* $(CPMFILES)/RESET.COM
-	cp $< $@
-	dd if=/dev/zero bs=3328 count=75 | tr '\0' '\345' >> $@
-	cd $(CPMFILES); cpmcp -f ibm-3740 $(current_dir)/$@ * 0:
-	cpmcp -f ibm-3740 $@ $(addprefix $(ASDIR)/,$(ASRCS)) 0:
+A.DSK:CPM.SYS $(CPMFILES)
+	dd if=/dev/zero bs=128 count=2002 of=$@
+	mkfs.cpm -f ibm-3740 -b $< $@
+	cpmcp -f ibm-3740 $@ $(CPMFILES) 0:
 	md5sum $@ > $@.md5
 
 A.UZ:A.DSK
-	../uzlib/examples/tgzip/tgzip $< $@
+	#../uzlib/examples/tgzip/tgzip $< $@
+	cp $< $@
 	md5sum $@ > $@.md5
 
 CPM22_A.c:A.UZ
@@ -53,4 +60,4 @@ test:CPM22_A.c
 	md5sum -c A.DSK.md5
 
 clean:
-	-rm *.CIM *.LST CPM.SYS A.* CPM22_A.[ch] *.md5 
+	-rm $(ASDIR)/*.lst $(AOBJS) CPM.SYS A.* CPM22_A.[ch] *.md5

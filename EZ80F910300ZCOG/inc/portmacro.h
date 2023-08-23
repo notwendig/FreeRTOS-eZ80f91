@@ -19,6 +19,7 @@ typedef uint24_t 	TickType_t;
 #define portBASE_TYPE BaseType_t
 #define intmax_t long
 int putch(int c);
+uint24_t mbase();
 
 typedef struct {
 	TickType_t msec;

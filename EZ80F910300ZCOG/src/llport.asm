@@ -14,7 +14,13 @@
 	xref _vTaskSwitchContext
 	xref _vTaskSetThreadLocalStoragePointer
 	xref _criticalcounter
-
+	
+	segment bss
+	xdef _cpmram
+	ORG B80000h
+	align 10000h
+_cpmram: ds 10000h
+	
     segment data
 
 _xTickCount:      dw24    0
@@ -47,6 +53,19 @@ _portFreeRTOS_htons:
 		pop		ix
 		ret
 		
+	; uint24_t mbase()
+	XDEF _mbase
+_mbase:
+		push	ix
+		ld			ix,0
+		push	ix
+		add		ix,sp
+		ld			a,mb
+		ld			(ix+2),a
+		pop		hl
+		pop		ix
+		ret
+
 tasktrap:
 $$:	nop
 	jr		$B

@@ -45,7 +45,7 @@
             <busMode>81</busMode>
             <controlRegister>28</controlRegister>
             <lower>80</lower>
-            <upper>bf</upper>
+            <upper>BF</upper>
          </CS2>
          <CS3>
             <busMode>0</busMode>

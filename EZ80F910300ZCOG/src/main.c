@@ -38,13 +38,13 @@ const char *hostname = "ez80";
 //void vRegisterCLICommands( void );
 
 //void loadcpm(char *mem);
-//extern uint8_t cpmram;
+extern uint8_t cpmram;
 
 
 TaskHandle_t hndlA,hndlB,hndlC,hndlD,hndlCPM;
 uint8_t volatile last=sizeof(size_t);
 
-//void prvTCPCpmIOTask( void *ram );
+void prvTCPCpmIOTask( void *ram );
 
 void PutchThread(void *arg)
 {
@@ -162,7 +162,7 @@ int main(int argc, void *argv[])
 
 	res = xTaskCreate(StressThread, "StressThreadA", 2048, (void*)5, 3, &hndlC);
 	res = xTaskCreate(StressThread, "StressThreadB", 2048, (void*)6, 4, &hndlD);
-//	res = xTaskCreate(prvTCPCpmIOTask,"CPM22",2048,&cpmram,4,&hndlCPM);
+	res = xTaskCreate(prvTCPCpmIOTask,"CPM22",2048,&cpmram,4,&hndlCPM);
 
 	vTaskStartScheduler();
  

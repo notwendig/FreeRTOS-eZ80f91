@@ -1,30 +1,51 @@
+ifdef CPM22
 	include CPM.INC
 	include HWC.INC
 
+	XDEF BOOT
+	XDEF WBOOT
+	XDEF CONST
+	XDEF CONIN
+	XDEF CONOUT
+	XDEF LISTN
+	XDEF PUNCH
+	XDEF READER
+	XDEF HOME
+	XDEF SELDSK
+	XDEF SETTRK
+	XDEF SETSEC
+	XDEF SETDMA
+	XDEF READ
+	XDEF WRITE
+	XDEF LISTST
+	XDEF SECTRN
 
-	ORG	BIOS
+
+	define _BIOS,space=ram,org=BIOS
+	segment _BIOS
+	.assume adl=0
 
 NSECTS	EQU	(BIOS-CCP+127)/128	;warm start sector count
 ;
 ;	jump vector for individual subroutines
 ;
-		JP	_BOOT		;cold start
-		JP	_WBOOT		;warm start
-		JP	_CONST		;console status
-		JP	_CONIN		;console character in
-		JP	_CONOUT		;console character out
-		JP	_PLIST		;list character out
-		JP	_PUNCH		;punch character out
-		JP	_READER		;reader character out
-		JP	_HOME		;move head to home position
-		JP	_SELDSK		;select disk
-		JP	_SETTRK		;set track number BC
-		JP	_SETSEC		;set sector number
-		JP	_SETDMA		;set dma address
-		JP	_DREAD		;read disk
-		JP	_WRITE		;write disk
-		JP	_LISTST		;return list status
-		JP	_SECTRN		;sector translate
+BOOT:		JP	_BOOT		;cold start
+WBOOT:	JP	_WBOOT		;warm start
+CONST:		JP	_CONST		;console status
+CONIN:		JP	_CONIN		;console character in
+CONOUT:	JP	_CONOUT		;console character out
+LISTN:		JP	_LISTN		;list character out
+PUNCH:		JP	_PUNCH		;punch character out
+READER:	JP	_READER		;reader character out
+HOME:		JP	_HOME		;move head to home position
+SELDSK:	JP	_SELDSK		;select disk
+SETTRK:	JP	_SETTRK		;set track number BC
+SETSEC:	JP	_SETSEC		;set sector number
+SETDMA:	JP	_SETDMA		;set dma address
+READ:		JP	_READ		;read disk
+WRITE:		JP	_WRITE		;write disk
+LISTST:		JP	_LISTST		;return list status
+SECTRN:	JP	_SECTRN		;sector translate
 ;
 ;	fixed data tables for four-drive standard
 ;	IBM-compatible 8" disks
@@ -243,7 +264,7 @@ _CONOUT:
 ;
 ;	list character from register c
 ;
-_PLIST:
+_LISTN:
 	LD	A,C		;character to register a
 	EXBIOS	CONIO, PORTOUT, PRTDAT
 	RET
@@ -336,7 +357,7 @@ _SETDMA:
 ;
 ;	perform read operation
 ;
-_DREAD:
+_READ:
 	XOR	A		;read command -> A
 	JP	WAITIO		;to perform the actual i/o
 ;
@@ -383,7 +404,7 @@ CHKHD8:	DS	1		;check vector harddisk 8 I
 CHKHD9:	DS	1		;check vector harddisk 9 J
 ;
 EDAT:	EQU	$		;end of data area
-	ds 10000h - $,0
-_BIOSEND	equ $
 
+_BIOSEND	equ $
+endif ; ifdef CPM22
 	END	;of BIOS

@@ -1,5 +1,6 @@
+ifdef CPM22
 	include CPM.INC
-	
+
 ;**************************************************************
 ;*
 ;*             C P / M   version   2 . 2
@@ -18,8 +19,11 @@
 ;
 ;   Set origin for CP/M
 ;
-	ORG	CCP
-	
+
+	define _CCP,space=ram,org=CCP
+	segment _CCP
+	.assume adl=0
+
 ;
 CBASE:	JP	COMMAND		;execute command processor (ccp).
 	JP	CLEARBUF	;entry to empty input buffer before starting ccp.
@@ -51,7 +55,7 @@ PRINT:	LD	E,A		;setup bdos call.
 PRINTB:	PUSH	BC
 	CALL	PRINT
 	POP	BC
-	RET	
+	RET
 ;
 ;   Routine to send a carriage return, line feed combination
 ; to the console.
@@ -98,7 +102,7 @@ DSKSEL:	LD	E,A
 ENTRY1:	CALL	ENTRY
 	LD	(RTNCODE),A	;save return code.
 	INC	A		;set zero if 0ffh returned.
-	RET	
+	RET
 ;
 ;   Routine to open a file. (DE) must point to the _FCB.
 ;
@@ -143,7 +147,7 @@ DELETE:	LD	C,19
 ;
 ENTRY2:	CALL	ENTRY
 	OR	A		;set zero flag if appropriate.
-	RET	
+	RET
 ;
 ;   Routine to read the next record from a sequential file.
 ; (DE) points to the _FCB.
@@ -193,13 +197,13 @@ SETCDRV:CALL	GETUSR		;get user number
 	LD	HL,CDRIVE	;now add in the current drive number.
 	OR	(HL)
 	LD	(TDRIVE),A	;and save.
-	RET	
+	RET
 ;
 ;   Move currently active drive down to (TDRIVE).
 ;
 MOVECD:	LD	A,(CDRIVE)
 	LD	(TDRIVE),A
-	RET	
+	RET
 ;
 ;   Routine to convert (A) into upper case ascii. Only letters
 ; are affected.
@@ -209,7 +213,7 @@ UPPER:	CP	'a'		;check for letters in the range of 'a' to 'z'.
 	CP	'{'
 	RET	NC
 	AND	5FH		;convert it if found.
-	RET	
+	RET
 ;
 ;   Routine to get a line of input. We must check to see if the
 ; user is in (BATCH) mode. If so, then read the input from file
@@ -294,7 +298,7 @@ GETINP3:INC	HL
 GETINP4:LD	(HL),A		;add trailing null.
 	LD	HL,INBUFF+2
 	LD	(INPOINT),HL	;reset input line pointer.
-	RET	
+	RET
 ;
 ;   Routine to check the console for a key pressed. The zero
 ; flag is set is none, else the character is returned in (A).
@@ -306,7 +310,7 @@ CHKCON:	LD	C,11		;check console.
 	LD	C,1		;else get character.
 	CALL	ENTRY
 	OR	A		;clear zero flag and return.
-	RET	
+	RET
 ;
 ;   Routine to get the currently active drive number.
 ;
@@ -349,7 +353,7 @@ VERIFY1:LD	A,(DE)
 	INC	HL
 	DEC	B
 	JP	NZ,VERIFY1
-	RET	
+	RET
 ;
 ;   Print back file name with a '?' to indicate a syntax error.
 ;
@@ -394,7 +398,7 @@ CHECK:	LD	A,(DE)
 	RET	Z
 	CP	'>'
 	RET	Z
-	RET	
+	RET
 ;
 ;   Get the next non-blank character from (DE).
 ;
@@ -412,7 +416,7 @@ ADDHL:	ADD	A,L
 	LD	L,A
 	RET	NC		;take care of any carry.
 	INC	H
-	RET	
+	RET
 ;
 ;   Convert the first name in (_FCB).
 ;
@@ -523,7 +527,7 @@ GETEXT9:DEC	C
 	JP	NZ,GETEXT8
 	LD	A,B
 	OR	A
-	RET	
+	RET
 ;
 ;   CP/M command table. Note commands can be either 3 or 4 characters long.
 ;
@@ -564,7 +568,7 @@ SEARCH2:LD	A,(DE)
 	CP	' '
 	JP	NZ,SEARCH4
 	LD	A,C		;set return register for this command.
-	RET	
+	RET
 SEARCH3:INC	HL
 	DEC	B
 	JP	NZ,SEARCH3
@@ -588,9 +592,9 @@ COMMAND:LD	SP,CCPSTACK	;setup stack area.
 	PUSH	BC		;note that (C) should be equal to:
 	LD	A,C		;(uuuudddd) where 'uuuu' is the user number
 	RRA			;and 'dddd' is the drive number.
-	RRA	
-	RRA	
-	RRA	
+	RRA
+	RRA
+	RRA
 	AND	0FH		;isolate the user number.
 	LD	E,A
 	CALL	GETSETUC	;and set it.
@@ -691,8 +695,8 @@ DECODE1:LD	A,(HL)
 	AND	0E0H
 	JP	NZ,SYNERR
 	LD	A,B
-	RLCA	
-	RLCA	
+	RLCA
+	RLCA
 	RLCA			;(A)=(B)*8
 	ADD	A,B		;.......*9
 	JP	C,SYNERR
@@ -703,7 +707,7 @@ DECODE2:JP	C,SYNERR
 	LD	B,A		;and save result.
 	DEC	C		;only look at 11 digits.
 	JP	NZ,DECODE1
-	RET	
+	RET
 DECODE3:LD	A,(HL)		;spaces must follow (why?).
 	CP	' '
 	JP	NZ,SYNERR
@@ -711,7 +715,7 @@ DECODE3:LD	A,(HL)		;spaces must follow (why?).
 DECODE4:DEC	C
 	JP	NZ,DECODE3
 	LD	A,B		;set (A)=the numeric value entered.
-	RET	
+	RET
 ;
 ;   Move 3 bytes from (HL) to (DE). Note that there is only
 ; one reference to this at (A2D5h).
@@ -726,7 +730,7 @@ HL2DE:	LD	A,(HL)
 	INC	DE
 	DEC	B
 	JP	NZ,HL2DE
-	RET	
+	RET
 ;
 ;   Compute (HL)=(TBUFF)+(A)+(C) and get the byte that's here.
 ;
@@ -734,7 +738,7 @@ EXTRACT:LD	HL,TBUFF
 	ADD	A,C
 	CALL	ADDHL
 	LD	A,(HL)
-	RET	
+	RET
 ;
 ;  Check drive specified. If it means a change, then the new
 ; drive will be selected. In any case, the drive byte of the
@@ -787,9 +791,9 @@ DIRECT2:LD	E,0		;set initial cursor position.
 	CALL	Z,NONE		;none found at all?
 DIRECT3:JP	Z,DIRECT9	;terminate if no more names.
 	LD	A,(RTNCODE)	;get file's position in segment (0-3).
-	RRCA	
-	RRCA	
-	RRCA	
+	RRCA
+	RRCA
+	RRCA
 	AND	60H		;(A)=position*32
 	LD	C,A
 	LD	A,10
@@ -1203,14 +1207,10 @@ NBYTES:	DW	0		;byte counter used by TYPE.
 ;
 ;   Room for expansion?
 ;
-	DS	BDOS - 6 - $,0
+					BLKB	13,0
 
 PATTRN2:
 
-.if $ <> BDOS-6
-	.error
-.endif
 _CCPEND	equ $
+endif ; ifdef CPM22
 	END
-	
-

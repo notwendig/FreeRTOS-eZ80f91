@@ -32,8 +32,8 @@ void portSetup()
 	xHeapRegions[0].pucStartAddress = &_heapbot;
 	xHeapRegions[0].xSizeInBytes = (unsigned)&_heaptop - (unsigned)&_heapbot;
 	#if MEMPART==RAMONLY
-	xHeapRegions[1].pucStartAddress = (void*) 0xb80000U;
-	xHeapRegions[1].xSizeInBytes = 0x80000U;
+	xHeapRegions[1].pucStartAddress = (void*) 0xb90000U;
+	xHeapRegions[1].xSizeInBytes = 0x70000U;
 	#endif
 	
 	vPortDefineHeapRegions(xHeapRegions);
@@ -138,15 +138,6 @@ void * realloc(void *old, size_t size)
 	return tmp;
 }
 
-static uint24_t mbase()
-{
-	uint24_t mb=0;
-	asm(" ld a,mb");
-	asm(" ld (ix-1),a");
-	return mb;
-}
-
-
 uint8_t* farptr(uint8_t *nearptr)
 {
 	return (uint8_t*) ((uint24_t) nearptr & 0xFFFF | mbase());
@@ -248,7 +239,7 @@ void vAssertCalled (int x, const char *file, int line)
 		while(*tmp)
 			putchar(*tmp++);
 		
-		while(!x)
+		while(!(uint8_t)x)
 			asm(" nop");
 		TMR0_IER = 1;
 	}

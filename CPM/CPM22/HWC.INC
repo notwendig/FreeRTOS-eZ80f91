@@ -1,12 +1,11 @@
 ; eZ80F91 FreeRTOS Z80 CP/M 2.2 Hardware simulation
 
-LOADER: EQU 0DC00h		;Bootloader entry after start
 ;
 ;	I/O ports
 ;
 MONITOR: EQU 30h
 
-CONIO:	EQU 31h		; CONOLE, PRT, AUX Device
+CONIO:	    EQU    31h		; CONOLE, PRT, AUX Device
 CONSTA:	EQU	01h		;console status port
 CONDAT:	EQU	02h		;console data port
 PRTSTA:	EQU	03h		;printer status port

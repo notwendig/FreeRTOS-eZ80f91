@@ -1,6 +1,9 @@
+ifdef CPM22
 	include CPM.INC
 
-	ORG	BDOS-6
+	define _BDOS,space=ram,org=BDOS-6
+	segment _BDOS
+	.assume adl=0
 
 ;
 ;   Note that the following six bytes must match those at
@@ -61,7 +64,7 @@ FBASE1:	EX	DE,HL		;save the (DE) parameters.
 ;
 NFUNCTS EQU	41		;number of functions in followin table.
 ;
-FUNCTNS:DW	WBOOT,GETCON,OUTCON,GETRDR,PUNCH,LIST,DIRCIO,GETIOB
+FUNCTNS:DW	WBOOT,GETCON,OUTCON,GETRDR,PUNCH,LISTN,DIRCIO,GETIOB
 	DW	SETIOB,PRTSTR,RDBUFF,GETCSTS,GETVER,RSTDSK,SETDSK,OPENFIL
 	DW	CLOSEFIL,GETFST,GETNXT,DELFILE,READSEQ,WRTSEQ,FCREATE
 	DW	RENFILE,GETLOG,GETCRNT,PUTDMA,GETALOC,WRTPRTD,GETROV,SETATTR
@@ -181,7 +184,7 @@ OUTCHAR:LD	A,(OUTFLAG)	;check output flag.
 	PUSH	BC
 	LD	A,(PRTFLAG)	;check printer flip-flop flag.
 	OR	A
-	CALL	NZ,LIST		;print it also if non-zero.
+	CALL	NZ,LISTN		;print it also if non-zero.
 	POP	BC
 OUTCHR1:LD	A,C		;update cursors position.
 	LD	HL,CURPOS
@@ -2484,7 +2487,8 @@ CKSUMTBL: DEFB	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 ;
 ;   Extra space ?
 ;
-	DS	BIOS - $,0 ;	DEFB	0,0,0,0
+	DEFB	0,0,0,0
 
-_BDOSEND	equ $	
+_BDOSEND	equ $
+endif ;ifdef CPM22
 	END	;of CP/M 2.2

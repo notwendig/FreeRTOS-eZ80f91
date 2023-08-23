@@ -2,3 +2,6 @@
 **/Debug/
 **/Release/
 *.wsp
+**/*.hex
+**/*~
+**/*.lod

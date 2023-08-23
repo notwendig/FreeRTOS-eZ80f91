@@ -1,13 +1,16 @@
+ifdef CPM22
 include CPM.INC
 include HWC.INC
 
 SIZE:    EQU     (10000h-CCP)  	; size of cp/m system
 SECTS:   EQU     32h			;(SIZE / 128)   ; # of sectors to load
 
-	ORG	LOADER
-	
+	define _BOOT,space=ram,org=80h
+	segment _BOOT
+	.assume adl=0
 
-_loader:LD		SP,80h
+
+_loader:LD		SP,$
 		CALL	cprn
 		DB 		"CP/M 2.2 Loader v1.0 ",0
 		XOR		A,A				; a =0 select drive A
@@ -55,7 +58,7 @@ $F1: 	XOR     A
 		DB 		"OK",CR,LF,0
 		JP		BOOT
 
-		
+
 EXMON:	EXBIOS  MONITOR, 0, 0	; build-in monitor
 
 cprn:	POP		HL
@@ -67,13 +70,6 @@ $B1:	LD		A,(HL)
 		JR		$B1
 $F2:	JP		(HL)
 
-.if $ < 80h
-		DS _loader + 80h - $,0
-.endif
-
-.if $ <> _loader + 80h
-	.error
-.endif
-_LOADEREND	equ	$	
-
+_LOADEREND	equ	$
+endif  ; ifdef CPM22
 	END

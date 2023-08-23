@@ -89,9 +89,10 @@
 	150804:	JSIE Start this port.
 
 */
-
+#ifdef CPM22
 /* FreeRTOS includes. */
-#include "FreeRTOS.h"
+
+#include "exbios.h"
 #include "task.h"
 #include "queue.h"
 
@@ -102,16 +103,30 @@
 #include "FreeRTOS_IP.h"
 #include "FreeRTOS_Sockets.h"
 
-#include "stdint.h"
-#include "exbios.h"
 #include "cpmrdsk.h"
 #include "exbios.h"
-#include "zsidbdos.h"
 #include <string.h>
 #include "printf.h"
-#include "uzlib.h"
-#include "CPM22_A.h"
-#include "minimon.h"
+extern uint8_t loader;
+
+extern uint8_t dst_minimon;
+extern uint8_t src_minimon;
+extern unsigned len_minimon;
+
+extern uint8_t dst_bootloader;
+extern uint8_t src_bootloader;
+extern unsigned len_bootloader;
+extern uint8_t dst_ccp;
+extern uint8_t src_ccp;
+extern unsigned len_ccp;
+extern uint8_t dst_bdos;
+extern uint8_t src_bdos;
+extern unsigned len_bdos;
+extern uint8_t dst_bios;
+extern uint8_t src_bios;
+extern unsigned len_bios;
+
+
 
 #define	VERSION "(C) 2021 v2.0.0 "
 
@@ -137,6 +152,8 @@ static char 	*dma= 0;
 static dpb_t 	*dpb= 0;
 static uint16_t sequenz = 0;
 
+#include "CPM22_A.c"
+
 // Default disk IBM 3740 8" 77Trk*26Sec
 static const uint8_t  defxlt[26] = {
 	 1, 7,13,19,	// sectors  1, 2, 3, 4
@@ -161,27 +178,25 @@ static const dpb_t defdpb = {
 	  2,	// track offset
 };
 
-void CPM22Task(uint8_t* ram);
 void prvTCPCpmIOTask( void *ram );
-extern uint8_t loader;
 
-
+static void* loadz80(const void *dst, const void*src,size_t len)
+{
+	void *dstmb = farptr(dst);
+	memcpy(dstmb,src,len);
+	return dstmb;
+}
 
 // Injecting and run an Z80 Mashine-Monitor
 uint8_t *z80Monitor(trapframe_t *context)
 {
-	size_t slen = minimonz_length-4;
-	size_t dlen = *(uint32_t*)((size_t) minimonz + slen);
-	uint8_t *minimon = farptr((uint8_t*)MINIMON);
-	int uz = uzip(minimon,dlen,minimonz,slen);
-	
+	#if 0
+	*context->pc = loadz80(&dst_minimon,&src_minimon,len_minimon);
 	FreeRTOS_debug_printf(("%s at address %4.4X",pcLoadMonitorMessage,MINIMON));
 	FreeRTOS_send( xConnectedSocket,  ( void * ) pcLoadMonitorMessage,  strlen( pcLoadMonitorMessage ), 0 );
-	if(TINF_OK == uz)
-		*context->pc = minimon;
-	else
-		*context->pc = 0;
+	#endif
 	return *context->pc;
+	
 }
 
 uint8_t *ConsoleIO(trapframe_t *context, char dir, port_CONIO_t port)
@@ -235,10 +250,11 @@ static const pdu_t *doRamDiskReq(pdu_t *req)
 {
 	size_t offset;
 	pdu_t *rsp = 0;
+	pdutype_t cmd = req->hdr.cmdid;
 
-	if(ramdisk)
+	
+	if(!ramdisk)
 	{
-		pdutype_t cmd = req->hdr.cmdid;
 		switch(cmd)
 		{
 			case RDSK_Lifesign:
@@ -405,7 +421,6 @@ static uint8_t *z80BiosDiskIO(trapframe_t *context)
 						xlt = defxlt;
 					}
 
-rdisk:
 					sz = sizeof(hdr_t) + sizeof(mountreq_t);
 					req = FreeRTOS_GetUDPPayloadBuffer( sz, portMAX_DELAY );
 
@@ -428,30 +443,13 @@ rdisk:
 
 						//FreeRTOS_debug_printf(("req: cmd=%hhd, did=%hhd, sz=%hd sqz=%hd\n",req->hdr.cmdid,req->hdr.devid,req->hdr.pdusz,req->hdr.seqnz));
 
-						if(!req->hdr.devid && ramdisk)
+						if(!req->hdr.devid)
 							rsp = doRamDiskReq(req);
 						else
 						{
 							// Request from server
 							uint8_t devid = req->hdr.devid;
 							rsp = doRDiskReq(req);
-							if(!rsp && !ramdisk && !devid)
-							{
-								size_t slen = cpm22img_length-4;
-								size_t dlen = *(uint32_t*)((size_t) cpm22img + slen);
-								ramdisk = pvPortMalloc(dlen);
-								if(ramdisk)
-								{
-									int uz;
-									FreeRTOS_send( xConnectedSocket,  ( void * ) pcLoadRamdiskMessage,  strlen( pcLoadRamdiskMessage ), 0 );
-									memset(ramdisk,0xE5,dlen);
-									uz = uzipp(ramdisk,dlen,cpm22img,slen,uzipcb);
-									if(TINF_OK == uz)
-										goto rdisk;
-									vPortFree(ramdisk);
-									ramdisk = NULL;
-								}
-							}
 						}
 
 						if( rsp )
@@ -500,7 +498,7 @@ rdisk:
 							req->d.ioreq.track = curFDCT;
 							req->d.ioreq.sect = curFDCS;
 							memcpy(&req->d.ioreq.data, dma, SECSIZE);
-							if(!curdisk && ramdisk)
+							if(!curdisk)
 								rsp = doRamDiskReq(req);
 							else
 								rsp = doRDiskReq(req);
@@ -525,7 +523,7 @@ rdisk:
 							req->hdr.devid = curdisk;
 							req->d.ioreq.track = curFDCT;
 							req->d.ioreq.sect  = curFDCS;
-							if(!curdisk && ramdisk)
+							if(!curdisk)
 								rsp = doRamDiskReq(req);
 							else
 								rsp = doRDiskReq(req);
@@ -594,7 +592,7 @@ uint8_t *exbioscall(trapframe_t* arg)
 			Romboot(arg);
 		break;
 		case BDOSCALL:
-			bdos(arg);
+//			bdos(arg);
 		break;
 		default:
 			configASSERT(0);
@@ -611,7 +609,7 @@ static Socket_t prvOpenTCPServerSocket( uint16_t usPort )
 	static const TickType_t xReceiveTimeOut = portMAX_DELAY; // pdMS_TO_TICKS(1000);
 	static const TickType_t xTransmitTimeOut = portMAX_DELAY; // pdMS_TO_TICKS(1000);
 
-	const BaseType_t xBacklog = 20;
+	const BaseType_t xBacklog = 1;
 	BaseType_t xReuseSocket = pdTRUE;
 
 	/* Attempt to open the socket. */
@@ -625,7 +623,7 @@ static Socket_t prvOpenTCPServerSocket( uint16_t usPort )
 	/* Only one connection will be used at a time, so re-use the listening
 	socket as the connected socket.  See SimpleTCPEchoServer.c for an example
 	that accepts multiple connections. */
-	FreeRTOS_setsockopt( xSocket, 0, FREERTOS_SO_REUSE_LISTEN_SOCKET, &xReuseSocket, sizeof( xReuseSocket ) );
+	//FreeRTOS_setsockopt( xSocket, 0, FREERTOS_SO_REUSE_LISTEN_SOCKET, &xReuseSocket, sizeof( xReuseSocket ) );
 
 	/* NOTE:  The CLI is a low bandwidth interface (typing characters is slow),
 	so the TCP window properties are left at their default.  See
@@ -665,6 +663,14 @@ static void prvGracefulShutdown( Socket_t xSocket )
 	FreeRTOS_closesocket( xSocket );
 }
 
+void CPM22Task(uint8_t* ram)
+{
+	memcpy(ram+0x80,ramdisk,0x80);
+	asm(" ld		a,(ix+8)");
+	asm(" ld		mb,a");
+	asm(" jp.s	80h");
+}
+
 void prvTCPCpmIOTask( void *ram )
 {
 	static const TickType_t xReceiveTimeOut =  pdMS_TO_TICKS(1000);
@@ -693,34 +699,36 @@ void prvTCPCpmIOTask( void *ram )
 	/* Set a time out so accept() will just wait for a connection. */
 	FreeRTOS_setsockopt( xSocketRDisk, 0, FREERTOS_SO_RCVTIMEO, &xReceiveTimeOut, sizeof( xReceiveTimeOut ) );
 	FreeRTOS_setsockopt( xSocketRDisk, 0, FREERTOS_SO_SNDTIMEO, &xTransmitTimeOut, sizeof( xTransmitTimeOut ) );
+	xListeningSocket = prvOpenTCPServerSocket( RDSK_PORT);
+	/* Nothing for this task to do if the socket cannot be created. */
+	if( xListeningSocket == FREERTOS_INVALID_SOCKET )
+	{
+		vTaskDelete( NULL );
+	}
 
 
 	for( ;; )
 	{
-		/* Attempt to open the socket.  The port number is passed in the task
-		parameter.  The strange casting is to remove compiler warnings on 32-bit
-		machines.  NOTE:  The FREERTOS_SO_REUSE_LISTEN_SOCKET option is used,
-		so the listening and connecting socket are the same - meaning only one
-		connection will be accepted at a time, and that xListeningSocket must
-		be created on each iteration. */
-		xListeningSocket = prvOpenTCPServerSocket( RDSK_PORT);
-
-
-		/* Nothing for this task to do if the socket cannot be created. */
-		if( xListeningSocket == FREERTOS_INVALID_SOCKET )
-		{
-			vTaskDelete( NULL );
-		}
 
 		/* Wait for an incoming connection. */
 		xConnectedSocket = FreeRTOS_accept( xListeningSocket, &xClient, &xSize );
 
 		/* The FREERTOS_SO_REUSE_LISTEN_SOCKET option is set, so the
-		connected and listening socket should be the same socket. */
-		configASSERT( xConnectedSocket == xListeningSocket );
+		connected and listening socket should be the same socket.
+		configASSERT( xConnectedSocket == xListeningSocket ); */
 		xRDiskAddress.sin_addr = xClient.sin_addr;
 		xRDiskAddress.sin_port = FreeRTOS_htons( RDSK_PORT );
 
+		if(!ramdisk)
+		{
+			size_t sz = cpm22img_length;
+			ramdisk = pvPortMalloc(256256);
+			if(ramdisk)
+				memcpy(ramdisk,cpm22img,sz);
+			else
+				break;
+		}
+		
 		if(cpmthread != pdPASS)
 		{
 			cpmthread = xTaskCreate( CPM22Task, "CPM22Task", configMINIMAL_STACK_SIZE*5, ram, 3,&thcpm);
@@ -758,4 +766,4 @@ void prvTCPCpmIOTask( void *ram )
 		// prvGracefulShutdown( xListeningSocket );
 	}
 }
-
+#endif // ifdef CPM22

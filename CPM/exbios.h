@@ -94,8 +94,10 @@
 #ifndef _EXBIOS_H_
 #define _EXBIOS_H_
 
+#include "FreeRTOS.h"
+#include "trap.h"
 #define SECSIZE 128
-	
+
 //	CONIO,PRT,AUX IOPorts
 typedef enum {
 	CONSTA = 0x01,	// console status port

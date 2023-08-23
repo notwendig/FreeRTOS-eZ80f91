@@ -2,11 +2,12 @@
 #include "stdint.h"
 #include "stdio.h"
 #include "trap.h"
+#include "CPM/exbios.h"
 
 uint8_t* z80trap(trapframe_t *frame)
 {
 	uint8_t *pc = farptr(*frame->pc -1);
-#if 0	
+#if 1	
 	if( *pc++ == CPMEXBIOS && *pc > MINIO && *pc < MAXIO)
 		pc = exbioscall(frame);
 	else

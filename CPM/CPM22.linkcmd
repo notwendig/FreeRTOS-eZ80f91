@@ -1,0 +1,21 @@
+
+-FORMAT=OMF695,INTEL32
+-map -maxhexlen=64 -quiet -warnoverlap -xref -unresolved=fatal
+-sort ADDRESS=ascending -warn -debug -NOigcase -warning=fatal
+
+RANGE ROM $000000 : $001C5B
+/* RANGE RAM $000000 : $00FFFF */
+RANGE EXTIO $000000 : $00FFFF
+RANGE INTIO $000000 : $0000FF
+
+COPY _BOOT ROM At $000000
+COPY _CCP ROM At $000080
+COPY _BDOS ROM At $000080+$800
+COPY _BIOS ROM At $000080+$800+$E00
+
+
+"./CPM22"=\
+"./CPM22/BOOT.obj", \
+"./CPM22/CCP.obj", \
+"./CPM22/BDOS.obj", \
+"./CPM22/BIOS.obj"
