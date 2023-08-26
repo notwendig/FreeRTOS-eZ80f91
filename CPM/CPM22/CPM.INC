@@ -8,13 +8,25 @@ MEM:		EQU	64	;cp/m version memory size in kilobytes
 ;	"bias" is address offset from 3400H for memory systems
 ;	than 16K (referred to as "b" throughout the text).
 ;
-BIAS:	EQU	(MEM-20)*1024
-CCP:	EQU	3400H+BIAS	;base of ccp
-BDOS:	EQU	CCP+800H+6	;base of bdos
-BIOS:	EQU	CCP+1600H	;base of bios
+BIAS		EQU	(MEM-20)*1024
+CCP			EQU	3400H+BIAS	;base of ccp
+BDOS		EQU	CCP+800H+6	;base of bdos
+BIOS		EQU	CCP+1600H	;base of bios
 
-;    define MINIMON_, space=rom,org=8000h
+;    define MINIMON_, space=ram,org=8000h
+	XREF	CCPBASE
+	XREF	BDOSBASE
+	XREF	BIOSBASE
+	XREF	ROMTOP
 
+
+CCPSECN		EQU (BDOSBASE-CCPBASE) / 80h
+OSSECN		EQU (BIOSBASE-CCPBASE) / 80h
+BIOSSECN	EQU (1A00h-BIOSBASE) / 80h
+
+BOOTSEC		EQU	1
+CCPSEC		EQU	2
+BIOSSEC		EQU	2+OSSECN
 
 CDISK:	EQU	0004H		;current disk number 0=A,...,15=P
 

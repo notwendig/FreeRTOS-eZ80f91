@@ -4,7 +4,7 @@ Copyright (C) 1999-2008 Zilog, Inc. All Rights Reserved
 
 LINK MAP:
 
-DATE:      Wed Aug 23 13:58:09 2023
+DATE:      Sat Aug 26 18:56:33 2023
 PROCESSOR: assembler
 FILES:     ./CPM22/BOOT.obj
            ./CPM22/CCP.obj        
@@ -15,17 +15,21 @@ FILES:     ./CPM22/BOOT.obj
 COMMAND LIST:
 =============
 
--FORMAT=OMF695,INTEL32
+-FORMAT=INTEL32
 -map -maxhexlen=64 -quiet -warnoverlap -xref -unresolved=fatal
 -sort ADDRESS=ascending -warn -debug -NOigcase -warning=fatal
 
-RANGE ROM $000000 : $001C5B
-/* RANGE RAM $000000 : $00FFFF */
-RANGE EXTIO $000000 : $00FFFF
-RANGE INTIO $000000 : $0000FF
+DEFINE CCPBASE= copy base of _CCP
+DEFINE BDOSBASE= copy base of _BDOS
+DEFINE BIOSBASE= copy base of _BIOS
+DEFINE ROMTOP = top of ROM
+
+RANGE ROM   $0000 : $1C5B
+RANGE EXTIO $0000 : $FFFF
+RANGE INTIO $0000 : $00FF
 
 COPY _BOOT ROM At $000000
-COPY _CCP ROM At $000080
+COPY _CCP  ROM At $000080
 COPY _BDOS ROM At $000080+$800
 COPY _BIOS ROM At $000080+$800+$E00
 
@@ -37,10 +41,10 @@ SPACE ALLOCATION:
 
 Space                     Base         Top      Size      Used    Unused
 ------------------ ----------- ----------- --------- --------- ---------
-RAM                 D:00000080  D:0000FFD9        0H     1C5AH FFFFE3A6H
-                                          (        0      7258     -7258)
-ROM                     C:0000      C:1C59     1C5CH     1C5AH        2H
-                                          (     7260      7258         2)
+RAM                 D:00000080  D:0000FFDB        0H     1C5CH FFFFE3A4H
+                                          (        0      7260     -7260)
+ROM                     C:0000      C:1C5B     1C5CH     1C5CH        0H
+                                          (     7260      7260         0)
 
 
 SEGMENTS WITHIN SPACE:
@@ -49,7 +53,7 @@ SEGMENTS WITHIN SPACE:
 RAM                               Type        Base         Top      Size
 ------------------ ------------------- ----------- ----------- ---------
 _BDOS              absolute data        D:0000EC00  D:0000F9FF      e00h
-_BIOS              absolute data        D:0000FA00  D:0000FFD9      5dah
+_BIOS              absolute data        D:0000FA00  D:0000FFDB      5dch
 _BOOT              absolute data        D:00000080  D:000000FF       80h
 _CCP               absolute data        D:0000E400  D:0000EBFF      800h
 
@@ -57,35 +61,35 @@ _CCP               absolute data        D:0000E400  D:0000EBFF      800h
 ROM                               Type        Base         Top      Size
 ------------------ ------------------- ----------- ----------- ---------
 _BDOS              * segment copy *         C:0880      C:167F      e00h
-_BIOS              * segment copy *         C:1680      C:1C59      5dah
+_BIOS              * segment copy *         C:1680      C:1C5B      5dch
 _BOOT              * segment copy *         C:0000      C:007F       80h
 _CCP               * segment copy *         C:0080      C:087F      800h
 
 SEGMENTS WITHIN MODULES:
 ========================
 
-Module: CPM22/BDOS.ASM (File: ./CPM22/BDOS.obj) Version: 1:0 08/23/2023 13:58:08
+Module: CPM22/BDOS.ASM (File: ./CPM22/BDOS.obj) Version: 1:0 08/26/2023 18:56:32
 
     Name                                           Base         Top      Size
     --------------------------------------- ----------- ----------- ---------
     Segment: _BDOS                           D:0000EC00  D:0000F9FF      e00h
 
 
-Module: CPM22/BIOS.ASM (File: ./CPM22/BIOS.obj) Version: 1:0 08/23/2023 13:58:09
+Module: CPM22/BIOS.ASM (File: ./CPM22/BIOS.obj) Version: 1:0 08/26/2023 18:56:32
 
     Name                                           Base         Top      Size
     --------------------------------------- ----------- ----------- ---------
-    Segment: _BIOS                           D:0000FA00  D:0000FFD9      5dah
+    Segment: _BIOS                           D:0000FA00  D:0000FFDB      5dch
 
 
-Module: CPM22/BOOT.ASM (File: ./CPM22/BOOT.obj) Version: 1:0 08/23/2023 13:58:07
+Module: CPM22/BOOT.ASM (File: ./CPM22/BOOT.obj) Version: 1:0 08/26/2023 18:56:31
 
     Name                                           Base         Top      Size
     --------------------------------------- ----------- ----------- ---------
     Segment: _BOOT                           D:00000080  D:000000FF       80h
 
 
-Module: CPM22/CCP.ASM (File: ./CPM22/CCP.obj) Version: 1:0 08/23/2023 13:58:08
+Module: CPM22/CCP.ASM (File: ./CPM22/CCP.obj) Version: 1:0 08/26/2023 18:56:31
 
     Name                                           Base         Top      Size
     --------------------------------------- ----------- ----------- ---------
@@ -96,6 +100,10 @@ EXTERNAL DEFINITIONS:
 
 Symbol                               Address Module          Segment
 -------------------------------- ----------- --------------- --------------------------------
+CCPBASE                             00000080 (User Defined)
+BDOSBASE                            00000880 (User Defined)
+BIOSBASE                            00001680 (User Defined)
+ROMTOP                              00001C5B (User Defined)
 BOOT                              D:0000FA00 CPM22/BIOS      _BIOS                           
 WBOOT                             D:0000FA03 CPM22/BIOS      _BIOS                           
 CONST                             D:0000FA06 CPM22/BIOS      _BIOS                           
@@ -114,12 +122,28 @@ WRITE                             D:0000FA2A CPM22/BIOS      _BIOS
 LISTST                            D:0000FA2D CPM22/BIOS      _BIOS                           
 SECTRN                            D:0000FA30 CPM22/BIOS      _BIOS                           
 
-17 external symbol(s).
+21 external symbol(s).
 
 SYMBOL CROSS REFERENCE:
 =======================
 Name                              Use         Module
 --------------------------------- ----------- -------------------------
+CCPBASE                           Defined     LINKER
+                                  Referenced  CPM22/BOOT.ASM
+                                  Referenced  CPM22/CCP.ASM
+                                  Referenced  CPM22/BDOS.ASM
+                                  Referenced  CPM22/BIOS.ASM
+BDOSBASE                          Defined     LINKER
+                                  Referenced  CPM22/BOOT.ASM
+                                  Referenced  CPM22/CCP.ASM
+                                  Referenced  CPM22/BDOS.ASM
+                                  Referenced  CPM22/BIOS.ASM
+BIOSBASE                          Defined     LINKER
+                                  Referenced  CPM22/BOOT.ASM
+                                  Referenced  CPM22/CCP.ASM
+                                  Referenced  CPM22/BDOS.ASM
+                                  Referenced  CPM22/BIOS.ASM
+ROMTOP                            Defined     LINKER
 BOOT                              Defined     CPM22/BIOS.ASM
                                   Referenced  CPM22/BOOT.ASM
 WBOOT                             Defined     CPM22/BIOS.ASM
@@ -156,8 +180,7 @@ SECTRN                            Defined     CPM22/BIOS.ASM
 
 OUTPUT CHECKSUM
 ===============
-./CPM22.hex          0CDA64
-./CPM22.lod          0CDA64
+./CPM22.hex          0CD751
 
 
 

@@ -145,14 +145,13 @@ HDBLK:; 4mb-hd2 diskdef
 ;	individual subroutines to perform each function
 ;	simplest case is to just perform parameter initialization
 ;
-_BOOT:
-		LD		SP,80H		;use space below buffer for stack
-		CALL	$F1
+_BOOT:	LD		SP,80H		;use space below buffer for stack
+		CALL	intro
 		DB		"64K CP/M Vers. 2.2 / CBIOS V1.5"
 		DB		CR,LF
-		DB		"eZ80 port (C)1998-2021 by Juergen Sievers"
+		DB		"eZ80 port (C)1998-2023 by Juergen Sievers"
 		DB		CR,LF,0
-$F1:	POP		HL
+intro:	POP		HL
 BOOTL:  LD		A,(HL)
 		OR		A
 		JR		Z,BOOTC
@@ -164,21 +163,23 @@ BOOTC:  LD		(IOBYTE),A	;clear the iobyte
 		LD		(CDISK),A	;select disk zero
 		LD		C,A
 		CALL	SELDSK
-		JR		GOCPM		;initialize and go to cp/m
+     	LD		D,OSSECN	; sectors to load CCP&BDOS
+		JR		LOADCPM		;initialize and go to cp/m
+
 ;
 ;	simplest case is to read the disk until all sectors loaded
 ;
 _WBOOT:
 		LD	SP,128				; use space below buffer for stack
-
+		LD	D,CCPSECN			; sectors to load CCP
+LOADCPM:
 		XOR		A				; select drive A
 		LD		HL,0			; HL=0 IBM 3740 default dph
 		EXBIOS  FDIO, PORTOUT, FDCD	; select drive a
 		EXBIOS  FDIO, PORTINP, FDCST  ; get status of fdc
 
-		LD      HL,2            ; h=track 0, l=sector 2
-		LD      D,NSECTS        ; d=# sectors to load
- 		LD      IX,CCP          ; base transfer address
+		LD      HL,CCPSEC       ; h=track 0, l=sector 2
+		LD      IX,CCP          ; base transfer address
 
 		OR		A				; selected?
 		JR		Z,LSECT			; yes read system
@@ -386,7 +387,6 @@ WAITIO: EXBIOS	FDIO, PORTOUT, FDCOP	;start i/o operation
 ;
 ;	scratch ram area for BDOS use
 ;
-
 BEGDAT:	EQU	$		;beginning of data area
 
 DIRBF:	DS	128		;scratch directory area

@@ -32,10 +32,14 @@ void portSetup()
 	xHeapRegions[0].pucStartAddress = &_heapbot;
 	xHeapRegions[0].xSizeInBytes = (unsigned)&_heaptop - (unsigned)&_heapbot;
 	#if MEMPART==RAMONLY
+	#ifdef CPM22
 	xHeapRegions[1].pucStartAddress = (void*) 0xb90000U;
 	xHeapRegions[1].xSizeInBytes = 0x70000U;
+	#else
+	xHeapRegions[1].pucStartAddress = (void*) 0xb80000U;
+	xHeapRegions[1].xSizeInBytes = 0x80000U;
 	#endif
-	
+	#endif
 	vPortDefineHeapRegions(xHeapRegions);
 	
 	uzlib_init();

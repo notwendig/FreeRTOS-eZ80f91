@@ -1,76 +1,12 @@
 /*
     FreeRTOS - Copyright (C) 2016 Real Time Engineers Ltd.
     All rights reserved
-
-    VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
-
-    FreeRTOS is free software; you can redistribute it and/or modify it under
-    the terms of the GNU General Public License (version 2) as published by the
-    Free Software Foundation >>>> AND MODIFIED BY <<<< the FreeRTOS exception.
-
-    ***************************************************************************
-    >>!   NOTE: The modification to the GPL is included to allow you to     !<<
-    >>!   distribute a combined work that includes FreeRTOS without being   !<<
-    >>!   obliged to provide the source code for proprietary components     !<<
-    >>!   outside of the FreeRTOS kernel.                                   !<<
-    ***************************************************************************
-
-    FreeRTOS is distributed in the hope that it will be useful, but WITHOUT ANY
-    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-    FOR A PARTICULAR PURPOSE.  Full license text is available on the following
-    link: http://www.freertos.org/a00114.html
-
-    ***************************************************************************
-     *                                                                       *
-     *    FreeRTOS provides completely free yet professionally developed,    *
-     *    robust, strictly quality controlled, supported, and cross          *
-     *    platform software that is more than just the market leader, it     *
-     *    is the industry's de facto standard.                               *
-     *                                                                       *
-     *    Help yourself get started quickly while simultaneously helping     *
-     *    to support the FreeRTOS project by purchasing a FreeRTOS           *
-     *    tutorial book, reference manual, or both:                          *
-     *    http://www.FreeRTOS.org/Documentation                              *
-     *                                                                       *
-    ***************************************************************************
-
-    http://www.FreeRTOS.org/FAQHelp.html - Having a problem?  Start by reading
-    the FAQ page "My application does not run, what could be wrong?".  Have you
-    defined configASSERT()?
-
-    http://www.FreeRTOS.org/support - In return for receiving this top quality
-    embedded software for free we request you assist our global community by
-    participating in the support forum.
-
-    http://www.FreeRTOS.org/training - Investing in training allows your team to
-    be as productive as possible as early as possible.  Now you can receive
-    FreeRTOS training directly from Richard Barry, CEO of Real Time Engineers
-    Ltd, and the world's leading authority on the world's leading RTOS.
-
-    http://www.FreeRTOS.org/plus - A selection of FreeRTOS ecosystem products,
-    including FreeRTOS+Trace - an indispensable productivity tool, a DOS
-    compatible FAT file system, and our tiny thread aware UDP/IP stack.
-
-    http://www.FreeRTOS.org/labs - Where new FreeRTOS products go to incubate.
-    Come and try FreeRTOS+TCP, our new open source TCP/IP stack for FreeRTOS.
-
-    http://www.OpenRTOS.com - Real Time Engineers ltd. license FreeRTOS to High
-    Integrity Systems ltd. to sell under the OpenRTOS brand.  Low cost OpenRTOS
-    licenses offer ticketed support, indemnification and commercial middleware.
-
-    http://www.SafeRTOS.com - High Integrity Systems also provide a safety
-    engineered and independently SIL3 certified version for use in safety and
-    mission critical applications that require provable dependability.
-
-    1 tab == 4 spaces!
-*/
-
-
-/*
-	FreeRTOS eZ80F91 Acclaim! Port - Copyright (C) 2016 by NadiSoft
+    
+    FreeRTOS eZ80F91 Acclaim! Port - Copyright (C) 2016 by NadiSoft
     All rights reserved
 
 	This file is part of the FreeRTOS port for ZiLOG's EZ80F91 Module.
+    
     Copyright (C) 2016 by Juergen Sievers <JSievers@NadiSoft.de>
 	The Port was made and rudimentary tested on ZiLOG's
 	EZ80F910300ZCOG Developer Kit using ZDSII Acclaim 5.2.1 Developer
@@ -107,40 +43,19 @@
 #include "exbios.h"
 #include <string.h>
 #include "printf.h"
-extern uint8_t loader;
 
-extern uint8_t dst_minimon;
-extern uint8_t src_minimon;
-extern unsigned len_minimon;
-
-extern uint8_t dst_bootloader;
-extern uint8_t src_bootloader;
-extern unsigned len_bootloader;
-extern uint8_t dst_ccp;
-extern uint8_t src_ccp;
-extern unsigned len_ccp;
-extern uint8_t dst_bdos;
-extern uint8_t src_bdos;
-extern unsigned len_bdos;
-extern uint8_t dst_bios;
-extern uint8_t src_bios;
-extern unsigned len_bios;
-
-
-
-#define	VERSION "(C) 2021 v2.0.0 "
+#define	VERSION "(C) 2021 v2.0.1 "
 
 // CP/M 2.2 console in queue
 static QueueHandle_t cpminq;
 
-static Socket_t xConnectedSocket = (Socket_t)-1;
 static const char pcLoadRamdiskMessage[] = "Be patient decompressing and loading of the Ramdisk takes a while.\n\r";
 static const char pcLoadMonitorMessage[] = "Starting ZSID stand alone.\n\r";
 #define MINIMON 0xD000
 static const char pcWelcomeMessage[] = "\n\rEZ80F91 CP/M 2.2 Console " VERSION "\n\r";
 
 static TaskHandle_t thcpm;
-static Socket_t xSocketRDisk;
+static Socket_t xSocketRDisk, xConnectedSocket;
 static unsigned char *ramdisk = NULL;
 static struct freertos_sockaddr xRDiskAddress;
 static uint8_t  curdisk = -1;
@@ -253,7 +168,7 @@ static const pdu_t *doRamDiskReq(pdu_t *req)
 	pdutype_t cmd = req->hdr.cmdid;
 
 	
-	if(!ramdisk)
+	if(ramdisk)
 	{
 		switch(cmd)
 		{
@@ -350,13 +265,6 @@ static const pdu_t *doRDiskReq(pdu_t *req)
 	}
 
 	return rsp;
-}
-
-static    int uzipcb(struct uzlib_uncomp *uncomp)
-{
-	char prompt ='#';
-	FreeRTOS_send( xConnectedSocket,  ( void * ) &prompt,  1, 0 );
-	return 0;
 }
 
 static uint8_t *z80BiosDiskIO(trapframe_t *context)
@@ -601,70 +509,38 @@ uint8_t *exbioscall(trapframe_t* arg)
 	return *arg->pc;
 }
 
-static Socket_t prvOpenTCPServerSocket( uint16_t usPort )
+static    int uzipcb(struct uzlib_uncomp *uncomp)
 {
-	struct freertos_sockaddr xBindAddress;
-	Socket_t xSocket;
-
-	static const TickType_t xReceiveTimeOut = portMAX_DELAY; // pdMS_TO_TICKS(1000);
-	static const TickType_t xTransmitTimeOut = portMAX_DELAY; // pdMS_TO_TICKS(1000);
-
-	const BaseType_t xBacklog = 1;
-	BaseType_t xReuseSocket = pdTRUE;
-
-	/* Attempt to open the socket. */
-	xSocket = FreeRTOS_socket( FREERTOS_AF_INET, FREERTOS_SOCK_STREAM, FREERTOS_IPPROTO_TCP );
-	configASSERT( xSocket != FREERTOS_INVALID_SOCKET );
-
-	/* Set a time out so accept() will just wait for a connection. */
-	FreeRTOS_setsockopt( xSocket, 0, FREERTOS_SO_RCVTIMEO, &xReceiveTimeOut, sizeof( xReceiveTimeOut ) );
-	FreeRTOS_setsockopt( xSocket, 0, FREERTOS_SO_SNDTIMEO, &xTransmitTimeOut, sizeof( xTransmitTimeOut ) );
-
-	/* Only one connection will be used at a time, so re-use the listening
-	socket as the connected socket.  See SimpleTCPEchoServer.c for an example
-	that accepts multiple connections. */
-	//FreeRTOS_setsockopt( xSocket, 0, FREERTOS_SO_REUSE_LISTEN_SOCKET, &xReuseSocket, sizeof( xReuseSocket ) );
-
-	/* NOTE:  The CLI is a low bandwidth interface (typing characters is slow),
-	so the TCP window properties are left at their default.  See
-	SimpleTCPEchoServer.c for an example of a higher throughput TCP server that
-	uses are larger RX and TX buffer. */
-
-	/* Bind the socket to the port that the client task will send to, then
-	listen for incoming connections. */
-	xBindAddress.sin_port = usPort;
-	xBindAddress.sin_port = FreeRTOS_htons( xBindAddress.sin_port );
-	FreeRTOS_bind( xSocket, &xBindAddress, sizeof( xBindAddress ) );
-	FreeRTOS_listen( xSocket, xBacklog );
-
-	return xSocket;
-}
-
-static void prvGracefulShutdown( Socket_t xSocket )
-{
-	TickType_t xTimeOnShutdown;
-
-	/* Initiate a shutdown in case it has not already been initiated. */
-	FreeRTOS_shutdown( xSocket, FREERTOS_SHUT_RDWR );
-
-	/* Wait for the shutdown to take effect, indicated by FreeRTOS_recv()
-	returning an error. */
-	xTimeOnShutdown = xTaskGetTickCount();
-	do
-	{
-		char c;
-		if( FreeRTOS_recv( xSocket, &c,1, 0 ) < 0 )
-		{
-			break;
-		}
-	} while( ( xTaskGetTickCount() - xTimeOnShutdown ) < pdMS_TO_TICKS(5000) );
-
-	/* Finished with the socket and the task. */
-	FreeRTOS_closesocket( xSocket );
+	char prompt ='#';
+	FreeRTOS_send( xConnectedSocket,  ( void * ) &prompt,  1, 0 );
+	return 0;
 }
 
 void CPM22Task(uint8_t* ram)
-{
+{		
+	if(!ramdisk)
+	{
+		size_t srclen = cpm22img_length;
+		size_t dstlen = (size_t)*(long*)&cpm22img[srclen-4];
+		if(dstlen == 256256U && !ramdisk)
+		{
+			ramdisk = pvPortMalloc(dstlen);
+			if(ramdisk)
+			{
+				int i = strlen(pcLoadRamdiskMessage);
+				FreeRTOS_send( xConnectedSocket,  ( void * ) pcLoadRamdiskMessage,i,0);
+				i = uzipp(ramdisk, dstlen, cpm22img, srclen, uzipcb);
+				if(i)
+				{
+					vPortFree(ramdisk);
+					ramdisk = NULL; 
+				}
+			}
+		}
+		if(!ramdisk)
+			vTaskDelete( NULL );	
+	}
+	
 	memcpy(ram+0x80,ramdisk,0x80);
 	asm(" ld		a,(ix+8)");
 	asm(" ld		mb,a");
@@ -673,71 +549,64 @@ void CPM22Task(uint8_t* ram)
 
 void prvTCPCpmIOTask( void *ram )
 {
-	static const TickType_t xReceiveTimeOut =  pdMS_TO_TICKS(1000);
-	static const TickType_t xTransmitTimeOut = pdMS_TO_TICKS(1000);
-	static BaseType_t cpmthread = pdFALSE;
-	BaseType_t iosize;
+struct freertos_sockaddr xClient, xBindAddress;
+Socket_t xListeningSocket;
+socklen_t xSize = sizeof( xClient );
+static const TickType_t xReceiveTimeOut = portMAX_DELAY;
+const BaseType_t xBacklog = 1;
+size_t iosize;
+int cpmthread = pdFALSE;	
 
-	char cRxedChar, cInputIndex = 0;
-	struct freertos_sockaddr xClient;
-	Socket_t xListeningSocket;
-	socklen_t xSize = sizeof( xClient );
-	cpminq = xQueueCreate(81, sizeof( CHAR));
+    /* Attempt to open the socket. */
+    xListeningSocket = FreeRTOS_socket( FREERTOS_AF_INET, 
+                                        FREERTOS_SOCK_STREAM,
+                                        FREERTOS_IPPROTO_TCP );
 
-	while(FreeRTOS_IsNetworkUp() == pdFALSE)
-		vTaskDelay(pdMS_TO_TICKS(1000));
+    /* Check the socket was created. */
+    configASSERT( xListeningSocket != FREERTOS_INVALID_SOCKET );
 
+    /* If FREERTOS_SO_RCVBUF or FREERTOS_SO_SNDBUF are to be used with
+    FreeRTOS_setsockopt() to change the buffer sizes from their default then do
+    it here!.  (see the FreeRTOS_setsockopt() documentation. */
 
-	/* Create the socket. */
-	xSocketRDisk = FreeRTOS_socket( FREERTOS_AF_INET,
-	FREERTOS_SOCK_DGRAM,
-	FREERTOS_IPPROTO_UDP );
+    /* If ipconfigUSE_TCP_WIN is set to 1 and FREERTOS_SO_WIN_PROPERTIES is to
+    be used with FreeRTOS_setsockopt() to change the sliding window size from
+    its default then do it here! (see the FreeRTOS_setsockopt()
+    documentation. */
 
+    /* Set a time out so accept() will just wait for a connection. */
+    FreeRTOS_setsockopt( xListeningSocket,
+                         0,
+                         FREERTOS_SO_RCVTIMEO,
+                         &xReceiveTimeOut,
+                         sizeof( xReceiveTimeOut ) );
 
-	/* Check the socket was created. */
-	configASSERT( xSocketRDisk != FREERTOS_INVALID_SOCKET );
-	/* Set a time out so accept() will just wait for a connection. */
-	FreeRTOS_setsockopt( xSocketRDisk, 0, FREERTOS_SO_RCVTIMEO, &xReceiveTimeOut, sizeof( xReceiveTimeOut ) );
-	FreeRTOS_setsockopt( xSocketRDisk, 0, FREERTOS_SO_SNDTIMEO, &xTransmitTimeOut, sizeof( xTransmitTimeOut ) );
-	xListeningSocket = prvOpenTCPServerSocket( RDSK_PORT);
-	/* Nothing for this task to do if the socket cannot be created. */
-	if( xListeningSocket == FREERTOS_INVALID_SOCKET )
-	{
-		vTaskDelete( NULL );
-	}
+    /* Set the listening port. */
+    xBindAddress.sin_port = FreeRTOS_htons( RDSK_PORT );
 
+    /* Bind the socket to the port that the client RTOS task will send to. */
+    FreeRTOS_bind( xListeningSocket, &xBindAddress, sizeof( xBindAddress ) );
+
+    /* Set the socket into a listening state so it can accept connections.
+    The maximum number of simultaneous connections is limited to 1 */
+    FreeRTOS_listen( xListeningSocket, xBacklog );
 
 	for( ;; )
 	{
 
 		/* Wait for an incoming connection. */
 		xConnectedSocket = FreeRTOS_accept( xListeningSocket, &xClient, &xSize );
+		configASSERT( xConnectedSocket != FREERTOS_INVALID_SOCKET );
 
-		/* The FREERTOS_SO_REUSE_LISTEN_SOCKET option is set, so the
-		connected and listening socket should be the same socket.
-		configASSERT( xConnectedSocket == xListeningSocket ); */
 		xRDiskAddress.sin_addr = xClient.sin_addr;
 		xRDiskAddress.sin_port = FreeRTOS_htons( RDSK_PORT );
 
-		if(!ramdisk)
-		{
-			size_t sz = cpm22img_length;
-			ramdisk = pvPortMalloc(256256);
-			if(ramdisk)
-				memcpy(ramdisk,cpm22img,sz);
-			else
-				break;
-		}
-		
 		if(cpmthread != pdPASS)
 		{
+			cpminq = xQueueCreate(81, sizeof( CHAR));
 			cpmthread = xTaskCreate( CPM22Task, "CPM22Task", configMINIMAL_STACK_SIZE*5, ram, 3,&thcpm);
 			if(cpmthread != pdPASS)
-			{
-				prvGracefulShutdown( xListeningSocket );
-				vTaskDelete( NULL );
-			}
-
+				break;
 			/* Send the welcome message. */
 			iosize = FreeRTOS_send( xConnectedSocket,  ( void * ) pcWelcomeMessage,  strlen( pcWelcomeMessage ), 0 );
 			xQueueReset(cpminq);
@@ -754,16 +623,18 @@ void prvTCPCpmIOTask( void *ram )
 				xQueueSend(cpminq,&c,0);
 			}
 			else
-			{
-				/* Socket closed? */
-				// vTaskDelete( thcpm );
-				// clrtrap();
 				break;
-			}
 		} while( iosize >= 0 );
-		
-		/* Close the socket correctly. */
-		// prvGracefulShutdown( xListeningSocket );
+	}
+	if(cpmthread == pdPASS)
+		vTaskDelete( thcpm);
+	
+	FreeRTOS_closesocket(xConnectedSocket);
+	FreeRTOS_closesocket(xListeningSocket);
+	if(ramdisk)
+	{
+		vPortFree(ramdisk);
+		ramdisk = NULL;
 	}
 }
 #endif // ifdef CPM22
