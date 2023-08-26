@@ -2,9 +2,6 @@ ifdef CPM22
 include CPM.INC
 include HWC.INC
 
-SIZE:    EQU     (10000h-CCP)  	; size of cp/m system
-SECTS:   EQU     32h			;(SIZE / 128)   ; # of sectors to load
-
 	define _BOOT,space=ram,org=80h
 	segment _BOOT
 	.assume adl=0
@@ -17,29 +14,16 @@ _loader:LD		SP,$
 		SBC		HL,HL			; HL=0 IBM 3740 default dph
 		EXBIOS  FDIO, 0, FDCD	; select drive a
 		EXBIOS  FDIO, 1, FDCST  ; get status of fdc
+		LD		H,BIOSSEC / 26	; h=track start of BIOS
+		LD      L,BIOSSEC % 26  ; l=sector 2 V
+		LD      D,BIOSSECN	    ; d=# sectors to load
+ 		LD      IX,BIOS         ; BIOS transfer address
 
-		LD      L,2             ; h=track 0, l=sector 2
-		LD      D,SECTS         ; d=# sectors to load
- 		LD      IX,CCP          ; base transfer address
-		OR		A				; selected?
-		JR		NZ,EXMON		; yes read system
-;
-;       load the next sector
-;
-NEXTS:	LD		A,'.'
+$next:	OR		A				; DSK error
+		JR		NZ,EXMON		; yes go to buildin monitor
+		LD		A,'.'
 		EXBIOS	CONIO, 0, CONDAT
-		ADD		IX,SP           ; 128 bytes per sector
-		INC     L               ; sector = sector + 1
-		LD      A,L
-		CP      27              ; last sector of track ?
-		JR      C,$F1	        ; no, go read another
-;
-;       end of track, increment to next track
-;
-		LD      L,1             ; sector = 1
-		INC     H               ; track = track + 1
-$F1: 	XOR     A
-		LD		B,A
+		LD		B,0
 		LD		C,H				; set track
 		EXBIOS  FDIO, 0, FDCTBC
 		LD      C,L             ; set sector
@@ -47,29 +31,29 @@ $F1: 	XOR     A
 		PUSH	IX
 		POP		BC				; set dma
 		EXBIOS  DMAIO, 0, DMABC
+		XOR		A,A
 		EXBIOS  FDIO, 0, FDCOP	; a=0 => read sector
 		EXBIOS  FDIO, 1, FDCST  ; get status of fdc
-		OR      A               ; read successful ?
-		JR      NZ,EXMON        ; no, start buildin monitor
-
-		DEC     D               ; sects--
-		JR      NZ,NEXTS        ; head for the bios
+		ADD		IX,SP
+		INC		L
+		DEC		D
+		JR 		NZ, $next
 		CALL	cprn
 		DB 		"OK",CR,LF,0
 		JP		BOOT
 
-
 EXMON:	EXBIOS  MONITOR, 0, 0	; build-in monitor
 
 cprn:	POP		HL
-$B1:	LD		A,(HL)
+$pchar:	LD		A,(HL)
 		INC		HL
 		OR		A
-		JR		Z,$F2
+		JR		Z,$ret
 		EXBIOS	CONIO, 0, CONDAT
-		JR		$B1
-$F2:	JP		(HL)
-
+		JR		$pchar
+$ret:	JP		(HL)
+		DS		8
 _LOADEREND	equ	$
 endif  ; ifdef CPM22
 	END
+0

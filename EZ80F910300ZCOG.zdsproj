@@ -312,13 +312,6 @@
 
 <!-- breakpoint information -->
 <breakpoints>
-<breakpoint temporary="false" enabled="false" >
-<line-number>694</line-number>
-<pathname>Z:\workspace\FreeRTOS-eZ80f91\CPM\exbios.c</pathname>
-<address>11253</address>
-<command></command>
-<preserve-type>0</preserve-type>
-</breakpoint>
 </breakpoints>
 
 </project>
