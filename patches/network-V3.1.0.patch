@@ -1,0 +1,199 @@
+From 9be7655c6e4bef1526a08fea8478f741b6182e46 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?J=C3=BCrgen=20Willi=20Sievers?= <JSievers@NadiSoft.de>
+Date: Sat, 26 Aug 2023 19:56:00 +0200
+Subject: [PATCH] ZiLOG Acclaim fix
+
+---
+ .gitignore                                         |  6 +++---
+ source/FreeRTOS_ARP.c                              |  3 ++-
+ source/FreeRTOS_DNS.c                              |  4 +++-
+ source/FreeRTOS_IP.c                               |  2 +-
+ source/FreeRTOS_IP_Utils.c                         | 14 +-------------
+ source/FreeRTOS_TCP_IP.c                           |  3 ++-
+ source/FreeRTOS_UDP_IP.c                           |  3 ++-
+ .../portable/BufferManagement/BufferAllocation_2.c | 14 +++-----------
+ 8 files changed, 17 insertions(+), 32 deletions(-)
+
+diff --git a/.gitignore b/.gitignore
+index 3084e83..a45c4da 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,3 +1,3 @@
+-**/*.d
+-**/*.o
+-**/*.su
++**/Debug/
++**/Release/
++
+diff --git a/source/FreeRTOS_ARP.c b/source/FreeRTOS_ARP.c
+index 20aff6b..d4b2526 100644
+--- a/source/FreeRTOS_ARP.c
++++ b/source/FreeRTOS_ARP.c
+@@ -168,6 +168,7 @@ eFrameProcessingResult_t eARPProcessPacket( ARPPacket_t * const pxARPFrame )
+     /* Introduce a do while loop to allow use of breaks. */
+     do
+     {
++		uint32_t ulHostEndianProtocolAddr;
+         /* Only Ethernet hardware type is supported.
+          * Only IPv4 address can be present in the ARP packet.
+          * The hardware length (the MAC address) must be 6 bytes. And,
+@@ -193,7 +194,7 @@ eFrameProcessingResult_t eARPProcessPacket( ARPPacket_t * const pxARPFrame )
+             break;
+         }
+ 
+-        uint32_t ulHostEndianProtocolAddr = FreeRTOS_ntohl( ulSenderProtocolAddress );
++       ulHostEndianProtocolAddr = FreeRTOS_ntohl( ulSenderProtocolAddress );
+ 
+         if( ( ipFIRST_LOOPBACK_IPv4 <= ulHostEndianProtocolAddr ) &&
+             ( ulHostEndianProtocolAddr < ipLAST_LOOPBACK_IPv4 ) )
+diff --git a/source/FreeRTOS_DNS.c b/source/FreeRTOS_DNS.c
+index 87ca5c9..b0d6852 100644
+--- a/source/FreeRTOS_DNS.c
++++ b/source/FreeRTOS_DNS.c
+@@ -394,6 +394,7 @@
+ 
+         /* Obtain the DNS server address. */
+         FreeRTOS_GetAddressConfiguration( NULL, NULL, NULL, &ulIPAddress );
++		{
+         #if ( ipconfigUSE_LLMNR == 1 )
+             BaseType_t bHasDot = llmnr_has_dot( pcHostName );
+ 
+@@ -412,6 +413,7 @@
+             pxAddress->sin_port = dnsDNS_PORT;
+         }
+     }
++    }
+ 
+ /*!
+  * @brief return ip address from the dns reply message
+@@ -579,7 +581,7 @@
+                                                   TickType_t uxIdentifier,
+                                                   Socket_t xDNSSocket )
+     {
+-        uint32_t ulIPAddress;
++        uint32_t ulIPAddress = 0U;
+         BaseType_t xAttempt;
+ 
+         for( xAttempt = 0; xAttempt < ipconfigDNS_REQUEST_ATTEMPTS; xAttempt++ )
+diff --git a/source/FreeRTOS_IP.c b/source/FreeRTOS_IP.c
+index 8efbbf5..7950b58 100644
+--- a/source/FreeRTOS_IP.c
++++ b/source/FreeRTOS_IP.c
+@@ -999,9 +999,9 @@ void FreeRTOS_ReleaseUDPPayloadBuffer( void const * pvBuffer )
+         uint8_t * pucChar;
+         size_t uxTotalLength;
+         IPStackEvent_t xStackTxEvent = { eStackTxEvent, NULL };
++        BaseType_t xEnoughSpace;
+ 
+         uxTotalLength = uxNumberOfBytesToSend + sizeof( ICMPPacket_t );
+-        BaseType_t xEnoughSpace;
+ 
+         if( uxNumberOfBytesToSend < ( ipconfigNETWORK_MTU - ( sizeof( IPHeader_t ) + sizeof( ICMPHeader_t ) ) ) )
+         {
+diff --git a/source/FreeRTOS_IP_Utils.c b/source/FreeRTOS_IP_Utils.c
+index 2283c67..6f888dd 100644
+--- a/source/FreeRTOS_IP_Utils.c
++++ b/source/FreeRTOS_IP_Utils.c
+@@ -241,19 +241,7 @@ static NetworkBufferDescriptor_t * prvPacketBuffer_to_NetworkBuffer( const void
+          * 8 + 2 bytes. */
+         uxBuffer -= ( uxOffset + ipBUFFER_PADDING );
+ 
+-        /* Here a pointer was placed to the network descriptor.  As a
+-         * pointer is dereferenced, make sure it is well aligned. */
+-        if( ( uxBuffer & ( ( ( uintptr_t ) sizeof( uxBuffer ) ) - 1U ) ) == ( uintptr_t ) 0U )
+-        {
+-            /* MISRA Ref 11.4.2 [Validation of pointer alignment] */
+-            /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-114 */
+-            /* coverity[misra_c_2012_rule_11_4_violation] */
+-            pxResult = *( ( NetworkBufferDescriptor_t ** ) uxBuffer );
+-        }
+-        else
+-        {
+-            pxResult = NULL;
+-        }
++        pxResult = *( ( NetworkBufferDescriptor_t ** ) uxBuffer );
+     }
+ 
+     return pxResult;
+diff --git a/source/FreeRTOS_TCP_IP.c b/source/FreeRTOS_TCP_IP.c
+index 1b9451d..980c387 100644
+--- a/source/FreeRTOS_TCP_IP.c
++++ b/source/FreeRTOS_TCP_IP.c
+@@ -621,7 +621,7 @@
+ 
+         configASSERT( pxNetworkBuffer != NULL );
+         configASSERT( pxNetworkBuffer->pucEthernetBuffer != NULL );
+-
++{
+         /* Map the buffer onto a ProtocolHeaders_t struct for easy access to the fields. */
+ 
+         /* MISRA Ref 11.3.1 [Misaligned access] */
+@@ -863,6 +863,7 @@
+ 
+         /* pdPASS being returned means the buffer has been consumed. */
+         return xResult;
++	}
+     }
+     /*-----------------------------------------------------------*/
+ 
+diff --git a/source/FreeRTOS_UDP_IP.c b/source/FreeRTOS_UDP_IP.c
+index d8819da..be38bdb 100644
+--- a/source/FreeRTOS_UDP_IP.c
++++ b/source/FreeRTOS_UDP_IP.c
+@@ -315,7 +315,7 @@ BaseType_t xProcessReceivedUDPPacket( NetworkBufferDescriptor_t * pxNetworkBuffe
+     configASSERT( pxNetworkBuffer->pucEthernetBuffer != NULL );
+ 
+     /* Map the ethernet buffer to the UDPPacket_t struct for easy access to the fields. */
+-
++{
+     /* MISRA Ref 11.3.1 [Misaligned access] */
+ /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-113 */
+     /* coverity[misra_c_2012_rule_11_3_violation] */
+@@ -498,4 +498,5 @@ BaseType_t xProcessReceivedUDPPacket( NetworkBufferDescriptor_t * pxNetworkBuffe
+ 
+     return xReturn;
+ }
++}
+ /*-----------------------------------------------------------*/
+diff --git a/source/portable/BufferManagement/BufferAllocation_2.c b/source/portable/BufferManagement/BufferAllocation_2.c
+index bd8db4c..31ae1ef 100644
+--- a/source/portable/BufferManagement/BufferAllocation_2.c
++++ b/source/portable/BufferManagement/BufferAllocation_2.c
+@@ -73,7 +73,7 @@
+     #define ASSERT_CONCAT_( a, b )    a ## b
+     #define ASSERT_CONCAT( a, b )     ASSERT_CONCAT_( a, b )
+     #define STATIC_ASSERT( e ) \
+-    ; enum { ASSERT_CONCAT( assert_line_, __LINE__ ) = 1 / ( !!( e ) ) }
++    enum { ASSERT_CONCAT( assert_line_, __LINE__ ) = 1 / ( !!( e ) ) }
+ 
+     STATIC_ASSERT( ipconfigETHERNET_MINIMUM_PACKET_BYTES <= baMINIMAL_BUFFER_SIZE );
+ #endif
+@@ -188,11 +188,7 @@ uint8_t * pucGetNetworkBuffer( size_t * pxRequestedSizeBytes )
+ 
+     /* Round up xSize to the nearest multiple of N bytes,
+      * where N equals 'sizeof( size_t )'. */
+-    if( ( xSize & ( sizeof( size_t ) - 1U ) ) != 0U )
+-    {
+-        xSize = ( xSize | ( sizeof( size_t ) - 1U ) ) + 1U;
+-    }
+-
++	xSize =  (xSize + sizeof( size_t )) & (-1 << (sizeof( size_t ) -1));
+     *pxRequestedSizeBytes = xSize;
+ 
+     /* Allocate a buffer large enough to store the requested Ethernet frame size
+@@ -272,11 +268,7 @@ NetworkBufferDescriptor_t * pxGetNetworkBufferWithDescriptor( size_t xRequestedS
+                 /* Add 2 bytes to xRequestedSizeBytesCopy and round up xRequestedSizeBytesCopy
+                  * to the nearest multiple of N bytes, where N equals 'sizeof( size_t )'. */
+                 xRequestedSizeBytesCopy += 2U;
+-
+-                if( ( xRequestedSizeBytesCopy & ( sizeof( size_t ) - 1U ) ) != 0U )
+-                {
+-                    xRequestedSizeBytesCopy = ( xRequestedSizeBytesCopy | ( sizeof( size_t ) - 1U ) ) + 1U;
+-                }
++		xRequestedSizeBytesCopy = (xRequestedSizeBytesCopy+sizeof( size_t )) & (-1 << (sizeof( size_t ) -1));
+ 
+                 /* Extra space is obtained so a pointer to the network buffer can
+                  * be stored at the beginning of the buffer. */
+-- 
+2.41.0
+
