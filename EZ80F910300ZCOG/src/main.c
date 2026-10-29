@@ -88,7 +88,7 @@ void TaskLED( void *pvParameters )
 	#define LINESZ 120
     TickType_t ticks = (int)pvParameters;
 	char *line5x7 = pvPortMalloc(LINESZ+1);
-	dir_e dir = SHIFT_NONE;
+	dir_e dir = SHIFT_RIGHT;
 	int idx;
 	
 	while(1)

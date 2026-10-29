@@ -1,69 +1,114 @@
-# Build mit ZDS II 5.3.5
+# Build und Bibliothekspatches
 
-Die öffentlichen Basisversionen sind FreeRTOS-Kernel V10.6.1,
-FreeRTOS-Plus-TCP V3.1.0 und uzlib v2.9.5. Die ursprünglich eingetragenen
-Submodul-Commits enthalten lokale Änderungen und sind von den öffentlichen
-Upstreams nicht abrufbar. Deshalb ohne rekursive Submodule klonen und danach:
+## Unterstützter Stand
+
+| Bibliothek | Öffentliche Basis | Anzuwendende Patches in Reihenfolge |
+| --- | --- | --- |
+| FreeRTOS-Kernel | `V10.6.1` | `kernel-V10.6.1.patch` |
+| FreeRTOS-Plus-TCP | `V3.1.0` | `network-V3.1.0.patch`, `network-zds-tick-print.patch` |
+| uzlib | `v2.9.5` | `uzlib-v2.9.5.patch`, `uzlib-zds-inline.patch`, `uzlib-zds-checksum.patch` |
+
+Alle Patches liegen unter `patches/`. Die Gitlinks verweisen auf öffentliche
+Basistags; die eZ80-Anpassungen werden ausdrücklich als Patches veröffentlicht.
+Es werden keine zusätzlichen Forks benötigt.
+
+## Automatisches Setup
 
 ```sh
+git clone https://github.com/notwendig/FreeRTOS-eZ80f91.git
+cd FreeRTOS-eZ80f91
 python3 setup-dependencies.py
 ```
 
-Das Skript richtet diese drei Tags ein und wendet die mitgelieferten
-ZDS/eZ80-Patches sowie `patches/uzlib-zds-inline.patch` an. Es ist wiederholbar
-und überschreibt keine lokalen Änderungen beim Wechsel einer vorhandenen
-Version. Das nicht konfigurierte CP/M-3-Submodul wird für den CP/M-2.2-Debugbuild
-nicht benötigt und nicht abgerufen.
+Das Skript klont fehlende Bibliotheken, prüft ihre Basistags und wendet die
+Patches in der angegebenen Reihenfolge an. Bereits identisch angewendete
+Patches werden erkannt; ein weiterer Aufruf ist zulässig. Fremde lokale
+Änderungen verhindern einen automatischen Versionswechsel.
 
-In ZDS II `EZ80F910300ZCOG.zdsproj` öffnen, Konfiguration **Debug** auswählen
-und **Rebuild All** ausführen. Dieses Projekt enthält bereits die benötigten
-Kernel-, TCP/IP- und uzlib-Quellen; separate Bibliotheks-Builds sind dafür
-nicht erforderlich. ZDS II und ZTP werden unter
-`C:\Zilog\ZDSII_eZ80Acclaim!_5.3.5` erwartet. Bei einer anderen Installation
-muss der zusätzliche RZK-Include-Pfad im Compiler-Setup angepasst werden.
-
-Build-Korrekturen: gültiger ZTP/RZK-Include-Pfad für `_ez80.h`,
-`AMD79C874_phy.h` und die I/O-Typen sowie normale statische uzlib-Hilfsfunktionen
-statt des vom ZDS-Compiler nicht unterstützten C99-`inline`.
-
-## Ethernet-Laufzeitkorrektur
-
-Der Empfangsring wird mit TLBP/BP/RHBP in der richtigen Reihenfolge und
-RRP=BP initialisiert. Der Resetwert RRP=0 liegt sonst außerhalb eines
-Empfangsrings mit nichtnull Startadresse und verhindert eingehende Pakete.
-DHCP-Tick-Debugausgaben konvertieren 24-Bit-Ticks vor `%lu` explizit in
-`unsigned long`; das zusätzliche Patch wird vom Setup angewendet.
-
-## CP/M-Ramdisk auf TCP 4050
-
-Gzip-CRC und Trailerwerte verwenden explizit `uint32_t`, da eZ80-`int` nur
-24 Bit hat. `TINF_DONE` ist der erfolgreiche Abschluss, nicht ein Fehler.
-Der Entpacker trennt Fortschrittsanzeige vom Eingabecallback, kontrolliert
-Ausgabegrenzen und prüft den CRC auch bei exakt gefülltem Zielpuffer.
-Bei einem Ladefehler wird der CP/M-Task beendet, bevor ein NULL-Zeiger
-verwendet werden kann. Der Checksum-Patch wird vom Setup mit angewendet.
-
-Nach Änderungen an uzlib-Headern immer vollständig neu bauen, da die
-generierten Make-Regeln keine vollständigen Header-Abhängigkeiten enthalten.
-
-CP/M verwendet reservierte `CB 30`–`CB 35` als BIOS-Traps. Der Emulator
-muss diese am globalen TRAP-Vektor im ADL-Supervisor behandeln und mit
-`RET.L` in den Z80-Modus zurückkehren; ein Abbruch bei illegalen Opcodes
-unterstützt diesen Port nicht. Die CPU-Regression dafür liegt in
-`tests/test_illegal_traps.py` im Emulatorprojekt.
-
-Das erste Entpacken kann in der Emulation mehrere Minuten dauern. Die
-`#`-Zeichen melden Fortschritt. Danach erscheinen der CP/M-Loader und `a>`.
-
-Die Telnet-Schleife behandelt Empfangsfehler mit einem vorzeichenbehafteten
-Rückgabewert und schließt jeden angenommenen Client vor dem nächsten
-`accept()`. Andernfalls blockiert der alte Socket den einzigen Backlog-Platz.
-Live-Test nach Start des Targets:
+Eine normale Submodulinitialisierung ist ebenfalls möglich, ersetzt das
+Patchsetup jedoch nicht:
 
 ```sh
-python3 tests/test_freertos_cpm.py 192.168.77.26
+git submodule update --init -- kernel network uzlib
+python3 setup-dependencies.py
 ```
 
-Die Kit-Taster starten ihren Entprelltimer mit `xTimerStartFromISR`, da
-der Aufruf aus dem GPIO-Interrupt erfolgt. Die normale Task-API kann dort
-einen unzulässigen Schedulerwechsel auslösen.
+Nach dem Setup sind die Bibliotheks-Arbeitsbäume absichtlich gegenüber den
+Upstream-Tags geändert. Die Submodulkonfiguration unterdrückt diese erwarteten
+Arbeitsbaumänderungen in der Statusübersicht des Elternprojekts. Für die
+Bibliothek selbst gilt weiterhin etwa `git -C kernel status --short`.
+Die früheren lokalen Bibliothekscommits werden nicht als Downloadvoraussetzung
+verwendet. Das ungenutzte, nicht konfigurierte CP/M-3-Submodul wurde entfernt;
+der aktive CP/M-2.2-Pfad liegt unter `CPM/`.
+
+## Manuell anwenden
+
+Aus dem Projektverzeichnis, für neue, unveränderte Bibliothekscheckouts:
+
+```sh
+git clone --branch V10.6.1 https://github.com/FreeRTOS/FreeRTOS-Kernel.git kernel
+git -C kernel apply ../patches/kernel-V10.6.1.patch
+
+git clone --branch V3.1.0 https://github.com/FreeRTOS/FreeRTOS-Plus-TCP.git network
+git -C network apply ../patches/network-V3.1.0.patch
+git -C network apply ../patches/network-zds-tick-print.patch
+
+git clone --branch v2.9.5 https://github.com/pfalcon/uzlib.git uzlib
+git -C uzlib apply ../patches/uzlib-v2.9.5.patch
+git -C uzlib apply ../patches/uzlib-zds-inline.patch
+git -C uzlib apply ../patches/uzlib-zds-checksum.patch
+```
+
+Bei bestehenden, bearbeiteten Checkouts das automatische Setup verwenden
+oder Änderungen zuerst separat sichern. Patches nicht blind mehrfach anwenden.
+
+## ZDS II 5.3.5
+
+1. `EZ80F910300ZCOG.zdsproj` öffnen.
+2. Konfiguration **Debug** auswählen.
+3. **Rebuild All** ausführen und das passende RAM-Target laden.
+
+Das Hauptprojekt enthält die erforderlichen Kernel-, TCP/IP- und uzlib-Quellen.
+ZDS und ZTP werden unter `C:\Zilog\ZDSII_eZ80Acclaim!_5.3.5` erwartet.
+Bei anderer Installation den zusätzlichen Compiler-Includepfad
+`ZTP2.5.1\RZK\Inc` anpassen; dort liegen unter anderem `_ez80.h`,
+`AMD79C874_phy.h` und die I/O-Typen.
+
+Nach Änderungen an uzlib-Headern vollständig neu bauen. Die generierten
+Make-Regeln bilden nicht jede Headerabhängigkeit ab. Buildprodukte liegen
+unter `EZ80F910300ZCOG/Debug/` und `bin/`; `.hex`, `.lod` und `.wsp` sind
+ignoriert. Auch die generierte Debug-Map wird nicht versioniert; die
+Live-Tests verwenden die zum aktuell gebauten und geladenen Image passende Map.
+
+## Inhalt der Anpassungen
+
+- Kernel: eZ80-Kontextwechsel, ZDS-ABI und Heap-/Schedulerkompatibilität.
+- TCP/IP: ZDS-Kompatibilität und korrekte Ausgabe der 24-Bit-Ticks nach
+  expliziter Konvertierung für `%lu`.
+- uzlib: normale statische Hilfsfunktionen statt nicht unterstütztem
+  C99-`inline`; explizite `uint32_t`-Werte für Gzip-CRC und Trailer.
+- Anwendung: EMAC-Grenzen TLBP/BP/RHBP und RRP=BP, vorzeichenbehaftete
+  Socketfehler, Client-Abbau vor erneutem `accept()` und ISR-konformer
+  Entprelltimerstart mit `xTimerStartFromISR`.
+- CP/M-Wrapper: `TINF_DONE` als Erfolg, Ausgabegrenzen und CRC auch bei exakt
+  gefülltem Zielpuffer; kein Start mit einem ungültigen Ramdiskzeiger.
+
+CP/M verwendet reservierte `CB 30`–`CB 35` als BIOS-Traps. Der Emulator muss
+sie am F91-TRAP-Vektor im ADL-Supervisor behandeln und mit `RET.L` in den
+Z80-Modus zurückkehren. Ein Emulator, der bei jedem illegalen Opcode lediglich
+abbricht, unterstützt diesen CP/M-Port nicht.
+
+## Prüfen
+
+Im begleitenden Emulator-Workspace:
+
+```sh
+python3 tests/test_freertos_unzip.py
+python3 tests/test_freertos_buttons.py /tmp/ez80f91-1000/4040.qmp
+python3 tests/test_freertos_cpm.py <gast-ip>
+```
+
+Der erste Test ist ein Hosttest mit den tatsächlichen Wrapper-/uzlib-Quellen.
+Die beiden anderen benötigen laufende Firmware und deren passende Mapdatei.
+Weitere CPU-/Kernel-/Netzwerkprüfungen beschreibt der
+[Testkatalog](https://github.com/notwendig/qemuez80f91/blob/main/docs/testing.md).

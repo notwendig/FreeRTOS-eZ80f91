@@ -1,0 +1,8 @@
+*.md text eol=lf
+*.py text eol=lf
+*.c -text
+*.h -text
+*.asm -text
+*.zdsproj -text
+*.ztgt -text
+*.patch -text

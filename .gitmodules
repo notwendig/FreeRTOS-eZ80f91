@@ -1,9 +1,12 @@
 [submodule "kernel"]
 	path = kernel
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+	ignore = dirty
 [submodule "network"]
 	path = network
 	url = https://github.com/FreeRTOS/FreeRTOS-Plus-TCP.git
+	ignore = dirty
 [submodule "uzlib"]
 	path = uzlib
 	url = https://github.com/pfalcon/uzlib.git
+	ignore = dirty
