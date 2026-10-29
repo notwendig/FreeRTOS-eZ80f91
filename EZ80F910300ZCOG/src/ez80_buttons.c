@@ -125,7 +125,7 @@ static unsigned bstate;
 static void buttonx(BUTTONID_t id)
 {
 	button[id].state = BUTTON_UNKNOWN;
-	xTimerStart	( button[id].tm, 0);
+	xTimerStartFromISR( button[id].tm, NULL);
 	PB_ALT0 |= (1 << id);/* Clear interrupt flag for eZ80F91 date codes 0611 and after */
 }
 

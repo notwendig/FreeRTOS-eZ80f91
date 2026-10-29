@@ -92,7 +92,7 @@
 <option name="optspeed" type="boolean" change-action="compile">false</option>
 <option name="promote" type="boolean" change-action="compile">true</option>
 <option name="reduceopt" type="boolean" change-action="compile">false</option>
-<option name="stdinc" type="string" change-action="compile">EZ80F910300ZCOG\inc;kernel\include;network\source\include;uzlib\src;Z:\ZDSII_eZ80Acclaim!_5.3.5\ZTP2.5.1\RZK\Inc</option>
+<option name="stdinc" type="string" change-action="compile">EZ80F910300ZCOG\inc;kernel\include;network\source\include;uzlib\src;C:\Zilog\ZDSII_eZ80Acclaim!_5.3.5\ZTP2.5.1\RZK\Inc</option>
 <option name="usrinc" type="string" change-action="compile"></option>
 <option name="watch" type="boolean" change-action="none">false</option>
 <option name="multithread" type="boolean" change-action="compile">true</option>
@@ -101,7 +101,7 @@
 <tool name="Debugger">
 <options>
 <option name="target" type="string" change-action="rebuild">eZ80F91_99C0879_RAM</option>
-<option name="debugtool" type="string" change-action="none">USBSmartCable</option>
+<option name="debugtool" type="string" change-action="none">EthernetSmartCable</option>
 <option name="usepageerase" type="boolean" change-action="none">true</option>
 </options>
 </tool>

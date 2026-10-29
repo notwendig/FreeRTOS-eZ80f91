@@ -650,13 +650,15 @@ BaseType_t xNetworkInterfaceInitialise()
 	_bp   = (_tSEMAC_DescTbl*) (emacram + EMAC_TXBSZ);
 	_rhbp = (_tSEMAC_DescTbl*) (emacram + EMAC_RAM_SIZE);
 
-	EMAC_RHBP_L = (UINT8) (UINT24)_tlbp;
-    EMAC_RHBP_H = (UINT8)((UINT24)_tlbp >> 8);
+	EMAC_TLBP_L = (UINT8) (UINT24)_tlbp;
+    EMAC_TLBP_H = (UINT8)((UINT24)_tlbp >> 8);
     EMAC_BP_L   = (UINT8) (UINT24)_bp;
     EMAC_BP_H   = (UINT8)((UINT24)_bp >> 8);
     EMAC_BP_U   = (UINT8)((UINT24)_bp >> 16);
-    EMAC_TLBP_L = (UINT8) (UINT24)_rhbp;
-	EMAC_TLBP_H = (UINT8)((UINT24)_rhbp >> 8);
+    EMAC_RHBP_L = (UINT8) (UINT24)_rhbp;
+	EMAC_RHBP_H = (UINT8)((UINT24)_rhbp >> 8);
+	// RRP must start at BP; reset leaves it outside a nonzero RX ring.
+	EmacRrp = (uint16_t)(UINT24)_bp;
 
 	// Set status of the first Tx packet buffer to HOST OWNS to ensure that
     // the EMAC will not try to send the packet as soon as this init routine

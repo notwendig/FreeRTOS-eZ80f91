@@ -30,6 +30,7 @@
 
 #include "exbios.h"
 #include "task.h"
+#include "uzlib.h"
 #include "queue.h"
 
 /* FreeRTOS+CLI includes. */
@@ -530,7 +531,7 @@ void CPM22Task(uint8_t* ram)
 				int i = strlen(pcLoadRamdiskMessage);
 				FreeRTOS_send( xConnectedSocket,  ( void * ) pcLoadRamdiskMessage,i,0);
 				i = uzipp(ramdisk, dstlen, cpm22img, srclen, uzipcb);
-				if(i)
+				if(i != TINF_DONE)
 				{
 					vPortFree(ramdisk);
 					ramdisk = NULL; 
@@ -538,7 +539,13 @@ void CPM22Task(uint8_t* ram)
 			}
 		}
 		if(!ramdisk)
-			vTaskDelete( NULL );	
+		{
+			static const char error[] = "Ramdisk decompression failed.\r\n";
+			FreeRTOS_send(xConnectedSocket, (void *)error, sizeof(error)-1, 0);
+			thcpm = NULL;
+			vTaskDelete(NULL);
+			return;
+		}
 	}
 	
 	memcpy(ram+0x80,ramdisk,0x80);
@@ -554,7 +561,7 @@ Socket_t xListeningSocket;
 socklen_t xSize = sizeof( xClient );
 static const TickType_t xReceiveTimeOut = portMAX_DELAY;
 const BaseType_t xBacklog = 1;
-size_t iosize;
+BaseType_t iosize;
 int cpmthread = pdFALSE;	
 
     /* Attempt to open the socket. */
@@ -601,9 +608,9 @@ int cpmthread = pdFALSE;
 		xRDiskAddress.sin_addr = xClient.sin_addr;
 		xRDiskAddress.sin_port = FreeRTOS_htons( RDSK_PORT );
 
-		if(cpmthread != pdPASS)
+		if(cpmthread != pdPASS || thcpm == NULL)
 		{
-			cpminq = xQueueCreate(81, sizeof( CHAR));
+			if(!cpminq) cpminq = xQueueCreate(81, sizeof( CHAR));
 			cpmthread = xTaskCreate( CPM22Task, "CPM22Task", configMINIMAL_STACK_SIZE*5, ram, 3,&thcpm);
 			if(cpmthread != pdPASS)
 				break;
@@ -618,13 +625,15 @@ int cpmthread = pdFALSE;
 			/* Receive data on the socket. */
 			iosize = FreeRTOS_recv( xConnectedSocket, &c, 1, 0 );
 
-			if( iosize >= 0 )
+			if( iosize > 0 )
 			{
 				xQueueSend(cpminq,&c,0);
 			}
 			else
 				break;
-		} while( iosize >= 0 );
+		} while( iosize > 0 );
+		/* Release the accepted child before accepting another connection. */
+		FreeRTOS_closesocket(xConnectedSocket);
 	}
 	if(cpmthread == pdPASS)
 		vTaskDelete( thcpm);
