@@ -81,9 +81,12 @@ formatter and the same RAMONLY memory layout as Debug. It is not a cold-flash
 profile. Its output is `Release/EZ80F910300ZCOG.hex`/`.lod`/`.map`; Debug retains
 `bin/EZ80F910300ZCOGd.*`.
 
-After pulling a project configuration update, close and reopen the ZDS project
-before **Rebuild All**. Otherwise an already-open IDE can retain the previous
-settings or regenerate makefiles from its cached configuration.
+Close the ZDS project **before** pulling a project configuration update, then
+reopen it and run **Rebuild All**. An already-open IDE can save its cached old
+settings over the updated `.zdsproj` file; reopening after that save cannot
+recover the update. If this has already happened, back up local project changes,
+restore the updated project file from Git while it is closed, and reopen it.
+Do not repair generated `.mak` files: ZDS replaces them on the next build.
 
 Missing headers only in Release indicate outdated configuration/include paths,
 rather than missing libraries when Debug already builds. The Release settings
