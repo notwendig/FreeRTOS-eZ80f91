@@ -15,9 +15,7 @@
 #include <Stdio.h>
 #include <Stdarg.h>
 
-#ifndef _DEBUG
-#error Release not supported yet
-#endif
+/* Debug and Release share the RAMONLY board and heap layout. */
 
 //uint8_t ucHeap[configTOTAL_HEAP_SIZE] _At 0xB80000;
 HeapRegion_t xHeapRegions[] =

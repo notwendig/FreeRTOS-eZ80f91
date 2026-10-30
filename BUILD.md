@@ -71,11 +71,26 @@ Do not blindly apply patches repeatedly or discard unrelated edits.
 ## ZDS II 5.3.5
 
 1. Open `EZ80F910300ZCOG.zdsproj`.
-2. Select **Debug**.
+2. Select **Debug** for source debugging, or **Release** for the same RAM board profile without debug information.
 3. Run **Rebuild All**, then load the matching RAM target.
 
 The main project includes required kernel, IPv4/routing, TCP/IP and uzlib
-sources. The default installation is `C:\Zilog\ZDSII_eZ80Acclaim!_5.3.5`.
+sources. Both **Debug** and **Release** provide all include paths, thread and
+CP/M definitions. Release uses `NDEBUG`, no debug information, the custom
+formatter and the same RAMONLY memory layout as Debug. It is not a cold-flash
+profile. Its output is `Release/EZ80F910300ZCOG.hex`/`.lod`/`.map`; Debug retains
+`bin/EZ80F910300ZCOGd.*`.
+
+After pulling a project configuration update, close and reopen the ZDS project
+before **Rebuild All**. Otherwise an already-open IDE can retain the previous
+settings or regenerate makefiles from its cached configuration.
+
+Missing headers only in Release indicate outdated configuration/include paths,
+rather than missing libraries when Debug already builds. The Release settings
+must include `EZ80F910300ZCOG\inc`, `kernel\include`,
+`network\source\include`, `uzlib\src` and the installed RZK headers.
+
+ The default installation is `C:\Zilog\ZDSII_eZ80Acclaim!_5.3.5`.
 For another installation, update the additional include path
 `ZTP2.5.1\RZK\Inc`, which supplies `_ez80.h`, `AMD79C874_phy.h` and I/O types.
 

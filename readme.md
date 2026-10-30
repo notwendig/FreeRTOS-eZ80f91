@@ -34,7 +34,9 @@ from its root initializes both firmware projects and their dependencies.
 
 Open `EZ80F910300ZCOG.zdsproj`, select **Debug**, then **Rebuild All**.
 The main project already compiles kernel, networking and uzlib; separate library
-builds are unnecessary. [Build instructions](BUILD.md) cover pinned commits,
+builds are unnecessary. **Release** uses the same RAM board/CP/M profile without
+debug information. Reopen the project after updating configuration settings so
+ZDS regenerates its makefile; see [Build instructions](BUILD.md#zds-ii-535). [Build instructions](BUILD.md) cover pinned commits,
 paths, manual setup and compatibility details.
 
 ## Start and services
