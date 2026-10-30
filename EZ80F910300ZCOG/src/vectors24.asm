@@ -49,16 +49,11 @@ RESTOREIMASK MACRO
 _reset:
 _rst0:
     IFDEF FLASH_BOOT
-    ; Cold boot cannot touch the trap stack before chip selects are configured.
-    di
-    stmix
-    jp.lil __init
-    ds 1
+    jp.lil __flash_reset_or_trap
     ELSE
-    ; RAM debugger sessions retain the CP/M trap entry.
 	jp.lil __trap
-	ds	4
     ENDIF
+	ds	4
 _rst8:
     di
     rsmix
@@ -97,6 +92,29 @@ _nmi:
         DEFINE .STARTUP, SPACE = ROM
         SEGMENT .STARTUP       ; This should be placed properly
         .ASSUME ADL=1
+
+    IFDEF FLASH_BOOT
+; RST.LIL 0 is also the CP/M BIOS gateway. Preserve all registers while
+; distinguishing silicon reset (SPL=0) from an existing task stack. At
+; reset the temporary pushes use the top of internal RAM on page FF;
+; board initialization remaps that RAM only after these values are popped.
+__flash_reset_or_trap:
+    push af
+    push hl
+    ld hl,-6
+    or a
+    sbc hl,sp
+    jr nz,__flash_task_trap
+    pop hl
+    pop af
+    di
+    stmix
+    jp __init
+__flash_task_trap:
+    pop hl
+    pop af
+    jp __trap
+    ENDIF
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; number of vectors supported

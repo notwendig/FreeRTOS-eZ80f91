@@ -87,8 +87,8 @@ sources. Both configurations provide all include paths, thread and CP/M definiti
   CP/M reserves `0xB80000–0xB8FFFF`; the additional heap remains at
   `0xB90000–0xBFFFFF`.
 
-`FLASH_BOOT` enters board initialization directly on reset, before any trap-stack
-access. The writable RAM disk is still allocated and decompressed on demand;
+`FLASH_BOOT` distinguishes cold reset from the CP/M BIOS trap at the shared
+reset vector, preserving the task registers for BIOS calls. The writable RAM disk is still allocated and decompressed on demand;
 only its compressed, read-only initial image moves to external flash. The HEX/LOD
 contains both flash regions. Use the matching 99C0879 target; the 99C0942 target
 has different RAM, flash and oscillator settings.
