@@ -34,10 +34,11 @@ from its root initializes both firmware projects and their dependencies.
 
 Open `EZ80F910300ZCOG.zdsproj`, select **Debug**, then **Rebuild All**.
 The main project already compiles kernel, networking and uzlib; separate library
-builds are unnecessary. **Release** uses the same RAM board/CP/M profile without
-debug information. Reopen the project after updating configuration settings so
-ZDS regenerates its makefile; see [Build instructions](BUILD.md#zds-ii-535). [Build instructions](BUILD.md) cover pinned commits,
-paths, manual setup and compatibility details.
+builds are unnecessary. **Release** places program code in internal flash and
+the compressed CP/M disk image in external AMD flash at `0x100000`. It uses
+`eZ80F91_99C0879-AMD_Flash`; Debug retains its RAM target. Close the project
+before updating its settings, then reopen it and rebuild. See
+[Build instructions](BUILD.md#zds-ii-535) for the memory layout and dependencies.
 
 ## Start and services
 

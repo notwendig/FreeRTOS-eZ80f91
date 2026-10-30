@@ -68,7 +68,14 @@ static char 	*dma= 0;
 static dpb_t 	*dpb= 0;
 static uint16_t sequenz = 0;
 
+/* Keep the generated disk image reusable; placement belongs to the board profile. */
+#ifdef CPM22_IMAGE_EXTERNAL
+#define CPM22_IMAGE_PLACEMENT _At 0x100000
+#else
+#define CPM22_IMAGE_PLACEMENT
+#endif
 #include "CPM22_A.c"
+#undef CPM22_IMAGE_PLACEMENT
 
 // Default disk IBM 3740 8" 77Trk*26Sec
 static const uint8_t  defxlt[26] = {

@@ -48,10 +48,17 @@ RESTOREIMASK MACRO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 _reset:
 _rst0:
-    ;di
-    ;rsmix
+    IFDEF FLASH_BOOT
+    ; Cold boot cannot touch the trap stack before chip selects are configured.
+    di
+    stmix
+    jp.lil __init
+    ds 1
+    ELSE
+    ; RAM debugger sessions retain the CP/M trap entry.
 	jp.lil __trap
 	ds	4
+    ENDIF
 _rst8:
     di
     rsmix

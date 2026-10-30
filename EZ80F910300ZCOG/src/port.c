@@ -15,7 +15,7 @@
 #include <Stdio.h>
 #include <Stdarg.h>
 
-/* Debug and Release share the RAMONLY board and heap layout. */
+/* Both profiles provide external RAM for the additional CP/M heap. */
 
 //uint8_t ucHeap[configTOTAL_HEAP_SIZE] _At 0xB80000;
 HeapRegion_t xHeapRegions[] =
@@ -38,6 +38,15 @@ void portSetup()
 	xHeapRegions[1].xSizeInBytes = 0x80000U;
 	#endif
 	#endif
+	/* heap_5 requires regions in increasing address order. Flash places the
+	 * application heap above the additional CP/M heap at 0xB90000. */
+	if(xHeapRegions[1].xSizeInBytes &&
+	   (size_t)xHeapRegions[0].pucStartAddress > (size_t)xHeapRegions[1].pucStartAddress)
+	{
+		HeapRegion_t lower = xHeapRegions[1];
+		xHeapRegions[1] = xHeapRegions[0];
+		xHeapRegions[0] = lower;
+	}
 	vPortDefineHeapRegions(xHeapRegions);
 	
 	uzlib_init();

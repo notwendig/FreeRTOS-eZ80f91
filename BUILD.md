@@ -71,15 +71,27 @@ Do not blindly apply patches repeatedly or discard unrelated edits.
 ## ZDS II 5.3.5
 
 1. Open `EZ80F910300ZCOG.zdsproj`.
-2. Select **Debug** for source debugging, or **Release** for the same RAM board profile without debug information.
-3. Run **Rebuild All**, then load the matching RAM target.
+2. Select **Debug** for the RAM application, or **Release** for internal/external flash.
+3. Run **Rebuild All**, then load the matching target.
 
 The main project includes required kernel, IPv4/routing, TCP/IP and uzlib
-sources. Both **Debug** and **Release** provide all include paths, thread and
-CP/M definitions. Release uses `NDEBUG`, no debug information, the custom
-formatter and the same RAMONLY memory layout as Debug. It is not a cold-flash
-profile. Its output is `Release/EZ80F910300ZCOG.hex`/`.lod`/`.map`; Debug retains
-`bin/EZ80F910300ZCOGd.*`.
+sources. Both configurations provide all include paths, thread and CP/M definitions.
+**Debug** uses the RAM target and retains `bin/EZ80F910300ZCOGd.*`.
+**Release** uses `eZ80F91_99C0879-AMD_Flash` and produces
+`Release/EZ80F910300ZCOG.hex`/`.lod`/`.map`:
+
+- Internal flash: `0x000000–0x03FFFF` for program code and ordinary constants.
+- External AMD flash: the compressed CP/M disk image is fixed at `0x100000`
+  (`CPM22_IMAGE_EXTERNAL`); its length constants remain with the program.
+- Application data, stack and first heap: external RAM `0xC00000–0xC3FFFF`.
+  CP/M reserves `0xB80000–0xB8FFFF`; the additional heap remains at
+  `0xB90000–0xBFFFFF`.
+
+`FLASH_BOOT` enters board initialization directly on reset, before any trap-stack
+access. The writable RAM disk is still allocated and decompressed on demand;
+only its compressed, read-only initial image moves to external flash. The HEX/LOD
+contains both flash regions. Use the matching 99C0879 target; the 99C0942 target
+has different RAM, flash and oscillator settings.
 
 Close the ZDS project **before** pulling a project configuration update, then
 reopen it and run **Rebuild All**. An already-open IDE can save its cached old

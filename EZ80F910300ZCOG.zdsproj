@@ -198,7 +198,7 @@
 <tools>
 <tool name="Assembler">
 <options>
-<option name="define" type="string" change-action="assemble">_EZ80ACCLAIM!=1,CPM22</option>
+<option name="define" type="string" change-action="assemble">_EZ80ACCLAIM!=1,CPM22,FLASH_BOOT</option>
 <option name="include" type="string" change-action="assemble"></option>
 <option name="list" type="boolean" change-action="none">true</option>
 <option name="listmac" type="boolean" change-action="none">false</option>
@@ -212,7 +212,7 @@
 <tool name="Compiler">
 <options>
 <option name="padbranch" type="string" change-action="compile">Off</option>
-<option name="define" type="string" change-action="compile">NDEBUG,_EZ80F91,_EZ80ACCLAIM!,_MULTI_THREAD,MEMPART=RAMONLY,CPM22</option>
+<option name="define" type="string" change-action="compile">NDEBUG,_EZ80F91,_EZ80ACCLAIM!,_MULTI_THREAD,MEMPART=RAMONLY,CPM22,CPM22_IMAGE_EXTERNAL</option>
 <option name="genprintf" type="boolean" change-action="compile">false</option>
 <option name="keepasm" type="boolean" change-action="none">false</option>
 <option name="keeplst" type="boolean" change-action="none">false</option>
@@ -230,7 +230,7 @@
 </tool>
 <tool name="Debugger">
 <options>
-<option name="target" type="string" change-action="rebuild">eZ80F91_99C0879_RAM</option>
+<option name="target" type="string" change-action="rebuild">eZ80F91_99C0879-AMD_Flash</option>
 <option name="debugtool" type="string" change-action="none">USBSmartCable</option>
 <option name="usepageerase" type="boolean" change-action="none">true</option>
 </options>
@@ -295,8 +295,8 @@
 <option name="useadddirectives" type="boolean" change-action="build">false</option>
 <option name="linkconfig" type="string" change-action="build">Standard</option>
 <option name="flashinfo" type="string" change-action="build">000000-0001FF</option>
-<option name="ram" type="string" change-action="build">06B000-07FFFF,B80000-B8FFFF</option>
-<option name="rom" type="string" change-action="build">000000-06AFFF</option>
+<option name="ram" type="string" change-action="build">B80000-B8FFFF,C00000-C3FFFF</option>
+<option name="rom" type="string" change-action="build">000000-03FFFF,100000-1FFFFF</option>
 <option name="extio" type="string" change-action="build">000000-00FFFF</option>
 <option name="intio" type="string" change-action="build">000000-0000FF</option>
 </options>

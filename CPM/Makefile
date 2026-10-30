@@ -46,6 +46,8 @@ A.UZ:A.DSK
 
 CPM22_A.c:A.UZ
 	@srec_cat $< -binary -output $@ -C-Array cpm22img
+	@sed -i '1i#ifndef CPM22_IMAGE_PLACEMENT\n#define CPM22_IMAGE_PLACEMENT\n#endif' $@
+	@sed -i 's/cpm22img\[\] =/cpm22img[] CPM22_IMAGE_PLACEMENT =/' $@
 
 
 relist:$(ASRCS)
