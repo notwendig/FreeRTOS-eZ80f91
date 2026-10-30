@@ -47,8 +47,19 @@ and kit windows, initially waiting for the ZDS debugger.
 | Kit | SW1–3, debouncing and scrolling matrix |
 
 Host debugger and guest application addresses are different. The standard
-emulator launcher uses br0 with nadibox DHCP; the firmware does not create a
-DHCP server.
+emulator launcher uses `br0`; nadibox is the DHCP server on the development LAN,
+not a firmware requirement. Another router or DHCP server can supply the lease.
+The firmware does not create a DHCP server.
+
+**Using another network:** connect the host bridge to that LAN. To change the
+bridge name or QEMU bridge-helper path for `start.sh`, update the bridge checks,
+`-nic` options and `start_after_bridge` call in the emulator's
+[`tools/start.py`](https://github.com/notwendig/qemuez80f91/blob/main/tools/start.py).
+Authorize the selected bridge in the helper's allowlist, normally
+`/etc/qemu/bridge.conf`. See
+[network setup](https://github.com/notwendig/qemuez80f91/blob/main/docs/getting-started.md#using-another-network).
+Use the resulting guest DHCP address for application connections and the host
+address in ZDS debugger settings.
 
 ```sh
 nc -u <guest-ip> 4060
