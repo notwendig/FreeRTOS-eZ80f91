@@ -38,6 +38,18 @@ configuration suppresses expected dirty-file status; inspect a dependency itself
 with commands such as `git -C kernel status --short`. The unused CP/M 3 submodule
 is removed; active CP/M 2.2 integration is under `CPM/`.
 
+## Fresh-clone build errors
+
+Missing `kernel/include/FreeRTOS.h`, `uzlib/src/adler32.c` or
+`network/source/portable/BufferManagement/BufferAllocation_2.c` means dependency
+setup is incomplete. From this repository, run `python3 setup-dependencies.py`,
+then select **Rebuild All** in ZDS. From the enclosing qemuez80f91 workspace,
+run `python3 scripts/setup-dependencies.py` instead. The IDE build itself does
+not download libraries or apply patches.
+
+A recursive submodule update obtains upstream files but does not apply the
+compatibility patches; always finish by running dependency setup.
+
 ## Manual setup
 
 From the project directory, using new unchanged library checkouts:

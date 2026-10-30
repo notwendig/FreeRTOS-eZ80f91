@@ -26,6 +26,12 @@ No private library fork or unpublished commit is required. Library working
 trees intentionally contain applied changes; this project tracks upstream
 revisions and patches.
 
+Do not skip `setup-dependencies.py`: a fresh clone does not contain the
+nested library sources. If ZDS reports missing `FreeRTOS.h` or `No rule to make
+target` for `kernel`, `network` or `uzlib`, run this setup command first.
+When using the qemuez80f91 workspace, `python3 scripts/setup-dependencies.py`
+from its root initializes both firmware projects and their dependencies.
+
 Open `EZ80F910300ZCOG.zdsproj`, select **Debug**, then **Rebuild All**.
 The main project already compiles kernel, networking and uzlib; separate library
 builds are unnecessary. [Build instructions](BUILD.md) cover pinned commits,
