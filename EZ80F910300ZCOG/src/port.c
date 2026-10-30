@@ -212,21 +212,21 @@ void vPortEndScheduler ()
 static StaticTask_t TimerTask_tcb;
 static StackType_t  TimerTask_stk[1024];
 
-void vApplicationGetTimerTaskMemory(  StaticTask_t **pxTimerTaskTCBBuffer,  StackType_t **pxTimerTaskStackBuffer, uint32_t *ulTimerTaskStackSize )
+void vApplicationGetTimerTaskMemory(  StaticTask_t **pxTimerTaskTCBBuffer,  StackType_t **pxTimerTaskStackBuffer, configSTACK_DEPTH_TYPE *ulTimerTaskStackSize )
 {	
 	*pxTimerTaskTCBBuffer =  &TimerTask_tcb;
-	*pxTimerTaskStackBuffer =  &TimerTask_stk;
-	*ulTimerTaskStackSize  = sizeof(TimerTask_stk);
+	*pxTimerTaskStackBuffer = TimerTask_stk;
+	*ulTimerTaskStackSize  = sizeof(TimerTask_stk) / sizeof(TimerTask_stk[0]);
 }
 
 	static StaticTask_t IdleTask_tcb;
 	static StackType_t  IdleTask_stk[1024];
 	
-void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize ) /*lint !e526 Symbol not defined as it is an application callback. */
+void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, configSTACK_DEPTH_TYPE *pulIdleTaskStackSize ) /*lint !e526 Symbol not defined as it is an application callback. */
 {
 	*ppxIdleTaskTCBBuffer =  &IdleTask_tcb;
-	*ppxIdleTaskStackBuffer =  &IdleTask_stk;
-	*pulIdleTaskStackSize = sizeof(IdleTask_stk);
+	*ppxIdleTaskStackBuffer = IdleTask_stk;
+	*pulIdleTaskStackSize = sizeof(IdleTask_stk) / sizeof(IdleTask_stk[0]);
 }
 
 

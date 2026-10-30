@@ -1,0 +1,48 @@
+diff --git a/portable/MemMang/heap_5.c b/portable/MemMang/heap_5.c
+index 60b293c..a3320be 100644
+--- a/portable/MemMang/heap_5.c
++++ b/portable/MemMang/heap_5.c
+@@ -186,7 +186,7 @@ void vPortDefineHeapRegions( const HeapRegion_t * const pxHeapRegions ) PRIVILEG
+ 
+ /* The size of the structure placed at the beginning of each allocated memory
+  * block must by correctly byte aligned. */
+-static const size_t xHeapStructSize = ( sizeof( BlockLink_t ) + ( ( size_t ) ( portBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
++const size_t xHeapStructSize = ( sizeof( BlockLink_t ) + ( ( size_t ) ( portBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
+ 
+ /* Create a couple of list links to mark the start and end of the list. */
+ PRIVILEGED_DATA static BlockLink_t xStart;
+diff --git a/tasks.c b/tasks.c
+index 46d5bda..1301b70 100644
+--- a/tasks.c
++++ b/tasks.c
+@@ -3043,7 +3043,7 @@ STATIC void prvInitialiseNewTask( TaskFunction_t pxTaskCode,
+ 
+                 /* Remove compiler warning about unused variables when the port
+                  * optimised task selection is not being used. */
+-                ( void ) uxPriorityUsedOnEntry;
++                /* ZDS II cannot discard this volatile value. */
+             }
+         }
+         taskEXIT_CRITICAL();
+@@ -3838,7 +3838,7 @@ void vTaskStartScheduler( void )
+ 
+     /* OpenOCD makes use of uxTopUsedPriority for thread debugging. Prevent uxTopUsedPriority
+      * from getting optimized out as it is no longer used by the kernel. */
+-    ( void ) uxTopUsedPriority;
++    /* ZDS II cannot discard this volatile value. */
+ 
+     traceRETURN_vTaskStartScheduler();
+ }
+diff --git a/timers.c b/timers.c
+index 7c5f915..2cd560d 100644
+--- a/timers.c
++++ b/timers.c
+@@ -1132,7 +1132,7 @@
+                     /* The timer queue is allocated statically in case
+                      * configSUPPORT_DYNAMIC_ALLOCATION is 0. */
+                     PRIVILEGED_DATA static StaticQueue_t xStaticTimerQueue;
+-                    PRIVILEGED_DATA static uint8_t ucStaticTimerQueueStorage[ ( size_t ) configTIMER_QUEUE_LENGTH * sizeof( DaemonTaskMessage_t ) ];
++                    PRIVILEGED_DATA static uint8_t ucStaticTimerQueueStorage[ configTIMER_QUEUE_LENGTH * sizeof( DaemonTaskMessage_t ) ];
+ 
+                     xTimerQueue = xQueueCreateStatic( ( UBaseType_t ) configTIMER_QUEUE_LENGTH, ( UBaseType_t ) sizeof( DaemonTaskMessage_t ), &( ucStaticTimerQueueStorage[ 0 ] ), &xStaticTimerQueue );
+                 }

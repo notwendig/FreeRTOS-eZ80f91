@@ -6,3 +6,6 @@
 **/*~
 **/*.lod
 /bin/*.map
+
+__pycache__/
+*.pyc

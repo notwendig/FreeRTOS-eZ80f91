@@ -1,19 +1,18 @@
 # FreeRTOS-eZ80f91
 
-FreeRTOS-Port und Demonstrationsanwendung für den **Zilog eZ80F91** und das
-Development Kit EZ80F910300ZCOG. Die Anwendung kombiniert präemptive Tasks,
-UART0, Ethernet/DHCP, eine CP/M-2.2-Ramdisk sowie Taster und 5×7-LED-Matrix.
+FreeRTOS port and demonstration application for the **Zilog eZ80F91** and
+EZ80F910300ZCOG development kit. It combines preemptive tasks, UART0,
+Ethernet/DHCP, a CP/M 2.2 RAM disk, buttons and a scrolling 5×7 LED matrix.
 
-## Voraussetzungen
+## Requirements
 
-- ZDS II eZ80Acclaim! **5.3.5**, einschließlich ZTP 2.5.1/RZK-Includes;
-- Python 3 und Git für das Bibliothekssetup;
-- echtes Development Kit mit passendem Debugger oder
-  [qemuez80f91](https://github.com/notwendig/qemuez80f91);
-- UART0 mit 115200 Baud, 8N1, RTS/CTS;
-- für Netzwerkfunktionen ein erreichbarer DHCP-Server.
+- ZDS II eZ80Acclaim! **5.3.5**, including ZTP 2.5.1/RZK headers.
+- Python 3 and Git for dependency setup.
+- A development kit/debugger or [qemuez80f91](https://github.com/notwendig/qemuez80f91).
+- UART0 at 115200 baud, 8N1, RTS/CTS.
+- An accessible DHCP server for ordinary network operation.
 
-## Reproduzierbarer Build
+## Reproducible build
 
 ```sh
 git clone https://github.com/notwendig/FreeRTOS-eZ80f91.git
@@ -21,76 +20,73 @@ cd FreeRTOS-eZ80f91
 python3 setup-dependencies.py
 ```
 
-Das Setup verwendet die **öffentlichen Upstream-Tags** und wendet die
-mitgelieferten eZ80-/ZDS-Kompatibilitätspatches an. Dafür sind keine privaten
-Bibliotheks-Forks und keine nicht veröffentlichten Commitobjekte erforderlich.
-Die gepatchten Bibliotheks-Arbeitsbäume dürfen danach Änderungen anzeigen;
-versioniert werden die Original-Basistags und die Patches dieses Projekts.
+Setup uses public upstream revisions plus supplied ZDS/eZ80 patches:
+FreeRTOS-Kernel **V11.3.2**, Plus-TCP **V4.4.2**, uzlib **6d60d65**.
+No private library fork or unpublished commit is required. Library working
+trees intentionally contain applied changes; this project tracks upstream
+revisions and patches.
 
-Danach `EZ80F910300ZCOG.zdsproj` in ZDS öffnen, **Debug** wählen und
-**Rebuild All** ausführen. Kernel, Netzwerk und uzlib werden bereits in diesem
-Projekt übersetzt; getrennte Bibliotheks-Builds sind nicht erforderlich.
-Die ausführliche [Build- und Patchanleitung](BUILD.md) erklärt Versionen,
-Pfadkonfiguration und manuelle Patchanwendung.
+Open `EZ80F910300ZCOG.zdsproj`, select **Debug**, then **Rebuild All**.
+The main project already compiles kernel, networking and uzlib; separate library
+builds are unnecessary. [Build instructions](BUILD.md) cover pinned commits,
+paths, manual setup and compatibility details.
 
-## Start und Dienste
+## Start and services
 
-Die Firmware in das passende RAM-/Flash-Target laden und starten. Die
-UART-Konsole meldet Board-/Taskzustand und die per DHCP bezogene IP-Adresse.
-Für die Emulation öffnet `./start.sh --kit` im Emulator-Workspace UART und
-Kit-Fenster; die CPU wartet anschließend auf den ZDS-Debugger.
+Load firmware into the matching RAM/flash target and run. UART reports board,
+task and DHCP state. In the emulator workspace, `./start.sh --kit` opens UART
+and kit windows, initially waiting for the ZDS debugger.
 
-| Schnittstelle | Funktion |
+| Interface | Function |
 | --- | --- |
-| UART0 | Startmeldungen, Task- und Netzwerkdiagnose |
-| TCP 4040 am Host | Ethernet-Smart-Cable-Debugger des Emulators; keine Gastanwendung |
-| TCP 4050 am Gast | CP/M-2.2-Konsole |
-| UDP 4060 am Gast | SysInfo-Monitor; ein erstes Datagramm startet die Anzeige |
-| Kit | SW1–SW3, Entprellung und 5×7-Matrix mit Laufschrift |
+| UART0 | Startup, task and network diagnostics |
+| Host TCP 4040 | Emulator Ethernet Smart Cable debugger |
+| Guest TCP 4040 | Firmware diagnostic console, independent of the host debugger |
+| Guest TCP 4050 | CP/M 2.2 console |
+| Guest UDP 4060 | SysInfo monitor; the first datagram starts output |
+| Kit | SW1–3, debouncing and scrolling matrix |
 
-Die Host-IP für den Debugger und die Gast-IP für CP/M/SysInfo sind
-verschiedene Adressen. Beim Emulator-Standardstarter liefert nadibox die
-DHCP-Lease über `br0`; das Firmwareprojekt selbst richtet keinen DHCP-Server ein.
+Host debugger and guest application addresses are different. The standard
+emulator launcher uses br0 with nadibox DHCP; the firmware does not create a
+DHCP server.
 
 ```sh
-nc -u <gast-ip> 4060
-nc <gast-ip> 4050
+nc -u <guest-ip> 4060
+nc <guest-ip> 4050
 ```
 
-Das erste Entpacken der CP/M-Ramdisk kann in der Emulation mehrere Minuten
-dauern. `#` zeigt Fortschritt an; danach erscheinen Loader und `a>`.
+Initial disk decompression may take minutes in emulation. `#` shows progress,
+followed by loader messages and `a>`.
 
-## Verzeichnisstruktur
+## Layout
 
-| Verzeichnis/Datei | Inhalt |
+| Path | Contents |
 | --- | --- |
-| `EZ80F910300ZCOG/src`, `inc` | Anwendung, Boardstart, Treiber und Konfiguration |
-| `EZ80F910300ZCOG.zdsproj` | Hauptprojekt für ZDS II |
-| `kernel`, `network`, `uzlib` | Öffentliche Bibliotheksbasen mit lokal angewendeten Patches |
-| `patches/` | Versionierte ZDS-/eZ80-Anpassungen |
-| `setup-dependencies.py` | Wiederholbares Setup ohne Überschreiben fremder Änderungen |
-| `CPM/` | CP/M-2.2-Ramdisk und BIOS-/TRAP-Anbindung |
-| `bin/` | Linker-Map und lokale Buildausgaben |
-| `doc/` | Vorhandene Hardware-/CP/M-Unterlagen und ursprüngliche Dokumentquellen |
+| `EZ80F910300ZCOG/src`, `inc` | Application, startup, drivers and configuration |
+| `EZ80F910300ZCOG.zdsproj` | Main ZDS project |
+| `kernel`, `network`, `uzlib` | Public library revisions with applied patches |
+| `patches/` | Tracked compatibility changes |
+| `setup-dependencies.py` | Repeatable setup that refuses unrelated dirty version changes |
+| `CPM/` | CP/M disk and BIOS/TRAP integration |
+| `bin/` | Generated images and matching linker maps |
+| `doc/` | Existing hardware/CP/M references and original document sources |
 
-## Enthaltene Korrekturen und Tests
+## Fixes and tests
 
-Der aktuelle Stand richtet den EMAC-Empfangsring einschließlich RRP korrekt
-ein, verwendet die ISR-API für die Tasterentprellung und prüft beim Entpacken
-Ausgabegrenzen, CRC und 32-Bit-Trailerwerte. CP/M-Clients werden vor dem
-nächsten `accept()` geschlossen. Die Demo startet mit Rechts-Laufschrift.
+The EMAC driver initializes ring boundaries/RRP and registers a TCP/IP 4 interface.
+Button debounce uses the ISR timer API. Disk decompression validates bounds,
+CRC and full-width trailers; clients are closed before the next accept.
+The demonstration scrolls to the right. IPv4 logs use 32-bit arguments rather
+than truncating addresses to eZ80's 24-bit `unsigned int`.
 
-Der Emulator-Workspace enthält Tests für C-/Boardstart, Kontextwechsel,
-Yield/Delay, Ticküberlauf, Dekompression, Taster und CP/M-Verbindungen.
-Ein bestandener Emulatortest ersetzt keinen vollständigen Hardwaretest.
-Der funktionale Emulator-PHY kann bei unvollständigen Herstellerregistern
-Geschwindigkeit/Duplex irreführend melden; dies misst nicht das Host-Netz.
+The emulator workspace provides startup, switching, blocking, rollover,
+decompression, buttons, CP/M and isolated DHCP/ARP/ICMP/TCP tests. These do not
+replace physical-hardware validation. The functional PHY may show misleading
+speed/duplex until vendor registers are completed; it does not measure host-link speed.
 
-## Herkunft und Lizenzhinweise
+## Origins and notices
 
-FreeRTOS eZ80F91 Acclaim!-Port: Copyright © 2016–2023 Jürgen Sievers / NadiSoft,
-wie in den ursprünglichen Quellköpfen angegeben. Der Port wurde für das
-Zilog Development Kit erstellt. Die Lizenztexte und Ausnahmen in den
-Port-Quellen und den jeweiligen Bibliotheken bleiben maßgeblich.
-ZDS II, Nexus und ZTP werden separat installiert und gehören nicht zum
-veröffentlichten Bibliothekssetup.
+Original port notices identify Copyright © 2016–2023 Jürgen Sievers / NadiSoft.
+Source-file license texts/exceptions and dependency licenses remain authoritative.
+This README does not replace them. ZDS, Nexus and ZTP are separately installed
+vendor tools, not included in dependency setup.

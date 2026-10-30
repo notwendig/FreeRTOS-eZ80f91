@@ -29,6 +29,14 @@ typedef unsigned int uintptr_t;
 typedef struct {unsigned char b[8];	} uint64_t;
 typedef struct {unsigned char w[8]; } ipv6_t;
 
+#define UINT8_MAX 0xffU
+#define UINT16_MAX 0xffffU
+#define UINTPTR_MAX 0xffffffU
+#define UINT24_MAX 0xffffffU
+#define UINT32_MAX 0xffffffffUL
+#define UINT_FAST8_MAX UINT8_MAX
+#define INT32_MAX 0x7fffffffL
+
 #define SIZE_MAX		0xFFFFFFU	
 
 #endif /* _STDINT_H_ */

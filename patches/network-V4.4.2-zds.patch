@@ -1,0 +1,503 @@
+diff --git a/source/FreeRTOS_ARP.c b/source/FreeRTOS_ARP.c
+index 823ca87..ce29e00 100644
+--- a/source/FreeRTOS_ARP.c
++++ b/source/FreeRTOS_ARP.c
+@@ -258,10 +258,10 @@
+                 #if ( ipconfigHAS_DEBUG_PRINTF != 0 )
+                     if( pxARPHeader->usOperation == ( uint16_t ) ipARP_REPLY )
+                     {
+-                        FreeRTOS_debug_printf( ( "ipARP_REPLY from %xip to %xip end-point %xip\n",
+-                                                 ( unsigned ) FreeRTOS_ntohl( ulSenderProtocolAddress ),
+-                                                 ( unsigned ) FreeRTOS_ntohl( ulTargetProtocolAddress ),
+-                                                 ( unsigned ) FreeRTOS_ntohl( ( pxTargetEndPoint != NULL ) ? pxTargetEndPoint->ipv4_settings.ulIPAddress : 0U ) ) );
++                        FreeRTOS_debug_printf( ( "ipARP_REPLY from %lxip to %lxip end-point %lxip\n",
++                                                 ( unsigned long ) FreeRTOS_ntohl( ulSenderProtocolAddress ),
++                                                 ( unsigned long ) FreeRTOS_ntohl( ulTargetProtocolAddress ),
++                                                 ( unsigned long ) FreeRTOS_ntohl( ( pxTargetEndPoint != NULL ) ? pxTargetEndPoint->ipv4_settings.ulIPAddress : 0U ) ) );
+                     }
+                 #endif /* ( ipconfigHAS_DEBUG_PRINTF != 0 ) */
+ 
+@@ -270,10 +270,10 @@
+                         ( ulSenderProtocolAddress != ulTargetProtocolAddress ) &&
+                         ( pxTargetEndPoint != NULL ) )
+                     {
+-                        FreeRTOS_debug_printf( ( "ipARP_REQUEST from %xip to %xip end-point %xip\n",
+-                                                 ( unsigned ) FreeRTOS_ntohl( ulSenderProtocolAddress ),
+-                                                 ( unsigned ) FreeRTOS_ntohl( ulTargetProtocolAddress ),
+-                                                 ( unsigned ) ( FreeRTOS_ntohl( ( pxTargetEndPoint != NULL ) ? pxTargetEndPoint->ipv4_settings.ulIPAddress : 0U ) ) ) );
++                        FreeRTOS_debug_printf( ( "ipARP_REQUEST from %lxip to %lxip end-point %lxip\n",
++                                                 ( unsigned long ) FreeRTOS_ntohl( ulSenderProtocolAddress ),
++                                                 ( unsigned long ) FreeRTOS_ntohl( ulTargetProtocolAddress ),
++                                                 ( unsigned long ) ( FreeRTOS_ntohl( ( pxTargetEndPoint != NULL ) ? pxTargetEndPoint->ipv4_settings.ulIPAddress : 0U ) ) ) );
+                     }
+                 #endif /* ( ipconfigHAS_DEBUG_PRINTF != 0 ) */
+ 
+@@ -1022,10 +1022,10 @@
+ 
+                 if( ( eReturn != eResolutionCacheHit ) || ( ulOriginal != ulAddressToLookup ) )
+                 {
+-                    FreeRTOS_debug_printf( ( "ARP %xip %s using %xip\n",
+-                                             ( unsigned ) FreeRTOS_ntohl( ulOriginal ),
++                    FreeRTOS_debug_printf( ( "ARP %lxip %s using %lxip\n",
++                                             ( unsigned long ) FreeRTOS_ntohl( ulOriginal ),
+                                              ( eReturn == eResolutionCacheHit ) ? "hit" : "miss",
+-                                             ( unsigned ) FreeRTOS_ntohl( ulAddressToLookup ) ) );
++                                             ( unsigned long ) FreeRTOS_ntohl( ulAddressToLookup ) ) );
+                 }
+ 
+                 /* It might be that the ARP has to go to the gateway. */
+diff --git a/source/FreeRTOS_DHCP.c b/source/FreeRTOS_DHCP.c
+index 77f6ae7..772c8b0 100644
+--- a/source/FreeRTOS_DHCP.c
++++ b/source/FreeRTOS_DHCP.c
+@@ -516,7 +516,7 @@
+         }
+         else if( prvProcessDHCPReplies( dhcpMESSAGE_TYPE_ACK, pxEndPoint ) == pdPASS )
+         {
+-            FreeRTOS_debug_printf( ( "vDHCPProcess: acked %xip\n", ( unsigned int ) FreeRTOS_ntohl( EP_DHCPData.ulOfferedIPAddress ) ) );
++            FreeRTOS_debug_printf( ( "vDHCPProcess: acked %lxip\n", ( unsigned long ) FreeRTOS_ntohl( EP_DHCPData.ulOfferedIPAddress ) ) );
+ 
+             /* DHCP completed.  The IP address can now be used, and the
+              * timer set to the lease timeout time. */
+@@ -1358,8 +1358,8 @@
+                     {
+                         /* HT:endian: used to be network order */
+                         EP_DHCPData.ulOfferedIPAddress = pxDHCPMessage->ulYourIPAddress_yiaddr;
+-                        FreeRTOS_printf( ( "vDHCPProcess: offer %xip for MAC address %02x-%02x\n",
+-                                           ( unsigned ) FreeRTOS_ntohl( EP_DHCPData.ulOfferedIPAddress ),
++                        FreeRTOS_printf( ( "vDHCPProcess: offer %lxip for MAC address %02x-%02x\n",
++                                           ( unsigned long ) FreeRTOS_ntohl( EP_DHCPData.ulOfferedIPAddress ),
+                                            pxEndPoint->xMACAddress.ucBytes[ 4 ],
+                                            pxEndPoint->xMACAddress.ucBytes[ 5 ] ) );
+                         xReturn = pdPASS;
+@@ -1558,7 +1558,7 @@
+             pvCopyDest = &pucUDPPayloadBuffer[ dhcpFIRST_OPTION_BYTE_OFFSET + dhcpDHCP_SERVER_IP_ADDRESS_OFFSET ];
+             ( void ) memcpy( pvCopyDest, pvCopySource, sizeof( EP_DHCPData.ulDHCPServerAddress ) );
+ 
+-            FreeRTOS_debug_printf( ( "vDHCPProcess: reply %xip\n", ( unsigned ) FreeRTOS_ntohl( EP_DHCPData.ulOfferedIPAddress ) ) );
++            FreeRTOS_debug_printf( ( "vDHCPProcess: reply %lxip\n", ( unsigned long ) FreeRTOS_ntohl( EP_DHCPData.ulOfferedIPAddress ) ) );
+             iptraceSENDING_DHCP_REQUEST();
+ 
+             EP_DHCPData.xDHCPSocket->pxEndPoint = pxEndPoint;
+diff --git a/source/FreeRTOS_DHCPv6.c b/source/FreeRTOS_DHCPv6.c
+index 4192098..9c4d28a 100644
+--- a/source/FreeRTOS_DHCPv6.c
++++ b/source/FreeRTOS_DHCPv6.c
+@@ -496,7 +496,7 @@ static void vDHCPv6ProcessEndPoint_HandleReply( NetworkEndPoint_t * pxEndPoint,
+ {
+     size_t uxDNSIndex;
+ 
+-    FreeRTOS_printf( ( "vDHCPProcess: acked %xip\n", ( unsigned ) FreeRTOS_ntohl( EP_DHCPData.ulOfferedIPAddress ) ) );
++    FreeRTOS_printf( ( "vDHCPProcess: acked %lxip\n", ( unsigned long ) FreeRTOS_ntohl( EP_DHCPData.ulOfferedIPAddress ) ) );
+ 
+     /* DHCP completed.  The IP address can now be used, and the
+      * timer set to the lease timeout time. */
+diff --git a/source/FreeRTOS_DNS.c b/source/FreeRTOS_DNS.c
+index 3983180..9b594c9 100644
+--- a/source/FreeRTOS_DNS.c
++++ b/source/FreeRTOS_DNS.c
+@@ -655,7 +655,7 @@ const MACAddress_t xMDNS_MacAddressIPv6 = { { 0x33, 0x33, 0x00, 0x00, 0x00, 0xFB
+                             else
+                         #endif
+                         {
+-                            FreeRTOS_printf( ( "prvPrepareLookup: found '%s' in cache: %xip\n", pcHostName, ( unsigned ) FreeRTOS_ntohl( ulIPAddress ) ) );
++                            FreeRTOS_printf( ( "prvPrepareLookup: found '%s' in cache: %lxip\n", pcHostName, ( unsigned long ) FreeRTOS_ntohl( ulIPAddress ) ) );
+                         }
+                     }
+                 }
+diff --git a/source/FreeRTOS_IP.c b/source/FreeRTOS_IP.c
+index 6da3d97..6928dce 100644
+--- a/source/FreeRTOS_IP.c
++++ b/source/FreeRTOS_IP.c
+@@ -340,7 +340,7 @@ static void prvProcessIPEventsAndTimers( void )
+             pxSocket = ( ( FreeRTOS_Socket_t * ) xReceivedEvent.pvData );
+             xAddress.sin_len = ( uint8_t ) sizeof( xAddress );
+ 
+-            switch( pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE */
++            switch( ( unsigned ) pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE */
+             {
+                 #if ( ipconfigUSE_IPv4 != 0 )
+                     case ipFALSE_BOOL:
+@@ -1679,7 +1679,7 @@ eFrameProcessingResult_t eConsiderFrameForProcessing( const uint8_t * const pucE
+  */
+ static void prvProcessEthernetPacket( NetworkBufferDescriptor_t * const pxNetworkBuffer )
+ {
+-    const EthernetHeader_t * pxEthernetHeader;
++    const EthernetHeader_t * pxEthernetHeader = ( const EthernetHeader_t * ) pxNetworkBuffer->pucEthernetBuffer;
+     eFrameProcessingResult_t eReturned = eReleaseBuffer;
+ 
+     /* Use do{}while(pdFALSE) to allow the use of break; */
+diff --git a/source/FreeRTOS_IP_Utils.c b/source/FreeRTOS_IP_Utils.c
+index 45672d0..66cbd1b 100644
+--- a/source/FreeRTOS_IP_Utils.c
++++ b/source/FreeRTOS_IP_Utils.c
+@@ -331,7 +331,7 @@ static NetworkBufferDescriptor_t * prvPacketBuffer_to_NetworkBuffer( const void
+ 
+         /* Here a pointer was placed to the network descriptor.  As a
+          * pointer is dereferenced, make sure it is well aligned. */
+-        if( ( uxBuffer & ( ( ( uintptr_t ) sizeof( uxBuffer ) ) - 1U ) ) == ( uintptr_t ) 0U )
++        if( ( uxBuffer % portBYTE_ALIGNMENT ) == 0U )
+         {
+             /* MISRA Ref 11.4.2 [Validation of pointer alignment] */
+             /* More details at: https://github.com/FreeRTOS/FreeRTOS-Plus-TCP/blob/main/MISRA.md#rule-114 */
+@@ -669,12 +669,12 @@ static void prvChecksumProtocolSetChecksum( BaseType_t xOutgoingPacket,
+         {
+             uint16_t usGot;
+             usGot = prvGetChecksumFromPacket( pxSet );
+-            FreeRTOS_debug_printf( ( "usGenerateProtocolChecksum[%s]: len %d ID %04X: from %xip to %xip cal %04X got %04X\n",
++            FreeRTOS_debug_printf( ( "usGenerateProtocolChecksum[%s]: len %d ID %04X: from %lxip to %lxip cal %04X got %04X\n",
+                                      pxSet->pcType,
+                                      pxSet->usProtocolBytes,
+                                      FreeRTOS_ntohs( pxSet->pxIPPacket->xIPHeader.usIdentification ),
+-                                     ( unsigned ) FreeRTOS_ntohl( pxSet->pxIPPacket->xIPHeader.ulSourceIPAddress ),
+-                                     ( unsigned ) FreeRTOS_ntohl( pxSet->pxIPPacket->xIPHeader.ulDestinationIPAddress ),
++                                     ( unsigned long ) FreeRTOS_ntohl( pxSet->pxIPPacket->xIPHeader.ulSourceIPAddress ),
++                                     ( unsigned long ) FreeRTOS_ntohl( pxSet->pxIPPacket->xIPHeader.ulDestinationIPAddress ),
+                                      FreeRTOS_ntohs( pxSet->usChecksum ),
+                                      FreeRTOS_ntohs( usGot ) ) );
+         }
+@@ -953,7 +953,7 @@ void prvProcessNetworkDownEvent( struct xNetworkInterface * pxInterface )
+             #endif /* ( (ipconfigUSE_RA != 0) && ( ipconfigUSE_IPv6 != 0 )) */
+ 
+             {
+-                switch( pxEndPoint->bits.bIPv6 ) /* LCOV_EXCL_BR_LINE */
++                switch( ( unsigned ) pxEndPoint->bits.bIPv6 ) /* LCOV_EXCL_BR_LINE */
+                 {
+                     #if ( ipconfigUSE_IPv4 != 0 )
+                         case ipFALSE_BOOL:
+diff --git a/source/FreeRTOS_Routing.c b/source/FreeRTOS_Routing.c
+index 15b345a..5aa0e50 100644
+--- a/source/FreeRTOS_Routing.c
++++ b/source/FreeRTOS_Routing.c
+@@ -293,10 +293,10 @@ struct xIPv6_Couple
+         #if ( ipconfigUSE_IPv4 != 0 )
+             if( pxEndPoint->bits.bIPv6 == ipFALSE_BOOL )
+             {
+-                FreeRTOS_printf( ( "FreeRTOS_AddEndPoint: MAC: %02x-%02x IPv4: %xip\n",
++                FreeRTOS_printf( ( "FreeRTOS_AddEndPoint: MAC: %02x-%02x IPv4: %lxip\n",
+                                    pxEndPoint->xMACAddress.ucBytes[ 4 ],
+                                    pxEndPoint->xMACAddress.ucBytes[ 5 ],
+-                                   ( unsigned ) FreeRTOS_ntohl( pxEndPoint->ipv4_defaults.ulIPAddress ) ) );
++                                   ( unsigned long ) FreeRTOS_ntohl( pxEndPoint->ipv4_defaults.ulIPAddress ) ) );
+             }
+         #endif /* ( ipconfigUSE_IPv4 != 0 ) */
+ 
+@@ -521,8 +521,8 @@ struct xIPv6_Couple
+         /* This was only for debugging. */
+         if( pxEndPoint == NULL )
+         {
+-            FreeRTOS_debug_printf( ( "FreeRTOS_FindEndPointOnNetMask: No match for %xip\n",
+-                                     ( unsigned ) FreeRTOS_ntohl( ulIPAddress ) ) );
++            FreeRTOS_debug_printf( ( "FreeRTOS_FindEndPointOnNetMask: No match for %lxip\n",
++                                     ( unsigned long ) FreeRTOS_ntohl( ulIPAddress ) ) );
+         }
+ 
+         return pxEndPoint;
+@@ -927,7 +927,7 @@ struct xIPv6_Couple
+                             /* do nothing, coverity happy */
+                         }
+ 
+-                        FreeRTOS_debug_printf( ( "pxEasyFit: ARP %xip -> %xip\n", ( unsigned ) FreeRTOS_ntohl( xIPAddressFrom.ulIP_IPv4 ), ( unsigned ) FreeRTOS_ntohl( xIPAddressTo.ulIP_IPv4 ) ) );
++                        FreeRTOS_debug_printf( ( "pxEasyFit: ARP %lxip -> %lxip\n", ( unsigned long ) FreeRTOS_ntohl( xIPAddressFrom.ulIP_IPv4 ), ( unsigned long ) FreeRTOS_ntohl( xIPAddressTo.ulIP_IPv4 ) ) );
+                     }
+                     xDoProcessPacket = pdTRUE;
+                     #endif /* ( ipconfigUSE_IPv4 != 0 ) */
+@@ -1479,7 +1479,7 @@ struct xIPv6_Couple
+         }
+         else
+         {
+-            switch( pxEndPoint->bits.bIPv6 ) /* LCOV_EXCL_BR_LINE */
++            switch( ( unsigned ) pxEndPoint->bits.bIPv6 ) /* LCOV_EXCL_BR_LINE */
+             {
+                 #if ( ipconfigUSE_IPv4 != 0 )
+                     case ipFALSE_BOOL:
+diff --git a/source/FreeRTOS_Sockets.c b/source/FreeRTOS_Sockets.c
+index 11fa833..9b2225a 100644
+--- a/source/FreeRTOS_Sockets.c
++++ b/source/FreeRTOS_Sockets.c
+@@ -2185,7 +2185,7 @@ void * vSocketClose( FreeRTOS_Socket_t * pxSocket )
+         #if ipconfigUSE_TCP == 1
+             if( pxSocket->ucProtocol == ( uint8_t ) FREERTOS_IPPROTO_TCP )
+             {
+-                switch( pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
++                switch( ( unsigned ) pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
+                 {
+                     /* The use of snprintf() is discouraged by the MISRA rules.
+                      * This code however, is only active when logging is used. */
+@@ -2196,10 +2196,10 @@ void * vSocketClose( FreeRTOS_Socket_t * pxSocket )
+ 
+                     #if ( ipconfigUSE_IPv4 != 0 )
+                         case ipFALSE_BOOL:
+-                            ( void ) snprintf( pucSocketProps, sizeof( pucSocketProps ), "%xip port %u to %xip port %u",
+-                                               ( unsigned ) pxSocket->xLocalAddress.ulIP_IPv4,
++                            ( void ) snprintf( pucSocketProps, sizeof( pucSocketProps ), "%lxip port %u to %lxip port %u",
++                                               ( unsigned long ) pxSocket->xLocalAddress.ulIP_IPv4,
+                                                pxSocket->usLocalPort,
+-                                               ( unsigned ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4,
++                                               ( unsigned long ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4,
+                                                pxSocket->u.xTCP.usRemotePort );
+                             break;
+                     #endif /* ( ipconfigUSE_IPv4 != 0 ) */
+@@ -2224,13 +2224,13 @@ void * vSocketClose( FreeRTOS_Socket_t * pxSocket )
+ 
+         if( pxSocket->ucProtocol == ( uint8_t ) FREERTOS_IPPROTO_UDP )
+         {
+-            switch( pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
++            switch( ( unsigned ) pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
+             {
+                 #if ( ipconfigUSE_IPv4 != 0 )
+                     case ipFALSE_BOOL:
+                         ( void ) snprintf( pucSocketProps, sizeof( pucSocketProps ),
+-                                           "%xip port %u",
+-                                           ( unsigned ) pxSocket->xLocalAddress.ulIP_IPv4,
++                                           "%lxip port %u",
++                                           ( unsigned long ) pxSocket->xLocalAddress.ulIP_IPv4,
+                                            pxSocket->usLocalPort );
+                         break;
+                 #endif /* ( ipconfigUSE_IPv4 != 0 ) */
+@@ -3494,7 +3494,7 @@ size_t FreeRTOS_GetLocalAddress( ConstSocket_t xSocket,
+ {
+     const FreeRTOS_Socket_t * pxSocket = ( const FreeRTOS_Socket_t * ) xSocket;
+ 
+-    switch( pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
++    switch( ( unsigned ) pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
+     {
+         #if ( ipconfigUSE_IPv4 != 0 )
+             case ipFALSE_BOOL:
+@@ -3730,8 +3730,8 @@ void vSocketWakeUpUser( FreeRTOS_Socket_t * pxSocket )
+                     #if ( ipconfigUSE_IPv4 != 0 )
+                         case FREERTOS_AF_INET4:
+                             pxSocket->bits.bIsIPv6 = ipFALSE_BOOL;
+-                            FreeRTOS_printf( ( "FreeRTOS_connect: %u to %xip:%u\n",
+-                                               pxSocket->usLocalPort, ( unsigned int ) FreeRTOS_ntohl( pxAddress->sin_address.ulIP_IPv4 ), FreeRTOS_ntohs( pxAddress->sin_port ) ) );
++                            FreeRTOS_printf( ( "FreeRTOS_connect: %u to %lxip:%u\n",
++                                               pxSocket->usLocalPort, ( unsigned long ) FreeRTOS_ntohl( pxAddress->sin_address.ulIP_IPv4 ), FreeRTOS_ntohs( pxAddress->sin_port ) ) );
+                             pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4 = FreeRTOS_ntohl( pxAddress->sin_address.ulIP_IPv4 );
+                             break;
+                     #endif /* ( ipconfigUSE_IPv4 != 0 ) */
+@@ -3939,7 +3939,7 @@ void vSocketWakeUpUser( FreeRTOS_Socket_t * pxSocket )
+                 *pxAddressLength = sizeof( struct freertos_sockaddr );
+             }
+ 
+-            switch( pxClientSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
++            switch( ( unsigned ) pxClientSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
+             {
+                 #if ( ipconfigUSE_IPv4 != 0 )
+                     case ipFALSE_BOOL:
+@@ -4688,9 +4688,9 @@ void vSocketWakeUpUser( FreeRTOS_Socket_t * pxSocket )
+                 {
+                     if( ipconfigTCP_MAY_LOG_PORT( pxSocket->usLocalPort ) )
+                     {
+-                        FreeRTOS_debug_printf( ( "FreeRTOS_send: %u -> %xip:%d: no space\n",
++                        FreeRTOS_debug_printf( ( "FreeRTOS_send: %u -> %lxip:%d: no space\n",
+                                                  pxSocket->usLocalPort,
+-                                                 ( unsigned ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4,
++                                                 ( unsigned long ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4,
+                                                  pxSocket->u.xTCP.usRemotePort ) );
+                     }
+ 
+@@ -5375,7 +5375,7 @@ void vSocketWakeUpUser( FreeRTOS_Socket_t * pxSocket )
+             /* BSD style sockets communicate IP and port addresses in network
+              * byte order.
+              * IP address of remote machine. */
+-            switch( pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
++            switch( ( unsigned ) pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
+             {
+                 #if ( ipconfigUSE_IPv4 != 0 )
+                     case ipFALSE_BOOL:
+@@ -5809,7 +5809,7 @@ BaseType_t FreeRTOS_GetIPType( ConstSocket_t xSocket )
+     const FreeRTOS_Socket_t * pxSocket = ( const FreeRTOS_Socket_t * ) xSocket;
+     BaseType_t xResult = ( BaseType_t ) ipTYPE_IPv4;
+ 
+-    switch( pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
++    switch( ( unsigned ) pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
+     {
+         #if ( ipconfigUSE_IPv4 != 0 )
+             case ipFALSE_BOOL:
+@@ -5869,11 +5869,11 @@ BaseType_t FreeRTOS_GetIPType( ConstSocket_t xSocket )
+             age = 999999U;
+         }
+ 
+-        switch( pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
++        switch( ( unsigned ) pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE Exclude this line because default case is not counted. */
+         {
+             #if ( ipconfigUSE_IPv4 != 0 )
+                 case ipFALSE_BOOL:
+-                    ( void ) snprintf( pcRemoteIp, sizeof( pcRemoteIp ), "%xip", ( unsigned ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4 );
++                    ( void ) snprintf( pcRemoteIp, sizeof( pcRemoteIp ), "%lxip", ( unsigned long ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4 );
+                     break;
+             #endif /* ( ipconfigUSE_IPv4 != 0 ) */
+ 
+diff --git a/source/FreeRTOS_TCP_IP.c b/source/FreeRTOS_TCP_IP.c
+index cbdfea9..34b45e3 100644
+--- a/source/FreeRTOS_TCP_IP.c
++++ b/source/FreeRTOS_TCP_IP.c
+@@ -550,7 +550,7 @@
+             {
+                 char pcBuffer[ 40 ];
+ 
+-                switch( pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE */
++                switch( ( unsigned ) pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE */
+                 {
+                     #if ( ipconfigUSE_IPv4 != 0 )
+                         case ipFALSE_BOOL:
+@@ -646,8 +646,8 @@
+                 ulDelayMs = 500U;
+             }
+ 
+-            FreeRTOS_debug_printf( ( "Connect[%xip:%u]: next timeout %u: %u ms\n",
+-                                     ( unsigned ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4, pxSocket->u.xTCP.usRemotePort,
++            FreeRTOS_debug_printf( ( "Connect[%lxip:%u]: next timeout %u: %u ms\n",
++                                     ( unsigned long ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4, pxSocket->u.xTCP.usRemotePort,
+                                      pxSocket->u.xTCP.ucRepCount, ( unsigned ) ulDelayMs ) );
+             pxSocket->u.xTCP.usTimeout = ( uint16_t ) ipMS_TO_MIN_TICKS( ulDelayMs );
+         }
+diff --git a/source/FreeRTOS_TCP_State_Handling.c b/source/FreeRTOS_TCP_State_Handling.c
+index 1d8f9d1..55a2c59 100644
+--- a/source/FreeRTOS_TCP_State_Handling.c
++++ b/source/FreeRTOS_TCP_State_Handling.c
+@@ -186,9 +186,9 @@
+                 {
+                     #if ( ipconfigHAS_DEBUG_PRINTF == 1 )
+                     {
+-                        FreeRTOS_debug_printf( ( "Inactive socket closed: port %u rem %xip:%u status %s\n",
++                        FreeRTOS_debug_printf( ( "Inactive socket closed: port %u rem %lxip:%u status %s\n",
+                                                  pxSocket->usLocalPort,
+-                                                 ( unsigned ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4,
++                                                 ( unsigned long ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4,
+                                                  pxSocket->u.xTCP.usRemotePort,
+                                                  FreeRTOS_GetTCPStateName( ( UBaseType_t ) pxSocket->u.xTCP.eTCPState ) ) );
+                     }
+diff --git a/source/FreeRTOS_TCP_Transmission.c b/source/FreeRTOS_TCP_Transmission.c
+index a061e2b..2c088a8 100644
+--- a/source/FreeRTOS_TCP_Transmission.c
++++ b/source/FreeRTOS_TCP_Transmission.c
+@@ -133,8 +133,8 @@
+                 /* The connection is in the SYN status. The packet will be repeated
+                  * to most 3 times.  When there is no response, the socket get the
+                  * status 'eCLOSE_WAIT'. */
+-                FreeRTOS_debug_printf( ( "Connect: giving up %xip:%u\n",
+-                                         ( unsigned ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4, /* IP address of remote machine. */
++                FreeRTOS_debug_printf( ( "Connect: giving up %lxip:%u\n",
++                                         ( unsigned long ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4, /* IP address of remote machine. */
+                                          pxSocket->u.xTCP.usRemotePort ) );                 /* Port on remote machine. */
+                 vTCPStateChange( pxSocket, eCLOSE_WAIT );
+             }
+@@ -493,7 +493,7 @@
+     {
+         BaseType_t xReturn = pdTRUE;
+ 
+-        switch( pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE */
++        switch( ( unsigned ) pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE */
+         {
+             #if ( ipconfigUSE_IPv4 != 0 )
+                 case ipFALSE_BOOL:
+@@ -758,9 +758,9 @@
+ 
+                         if( pxNetworkBuffer->pxEndPoint == NULL )
+                         {
+-                            FreeRTOS_printf( ( "prvTCPReturnPacket: no such end-point %xip => %xip\n",
+-                                               ( unsigned int ) FreeRTOS_ntohl( pxIPHeader->ulSourceIPAddress ),
+-                                               ( unsigned int ) FreeRTOS_ntohl( pxIPHeader->ulDestinationIPAddress ) ) );
++                            FreeRTOS_printf( ( "prvTCPReturnPacket: no such end-point %lxip => %lxip\n",
++                                               ( unsigned long ) FreeRTOS_ntohl( pxIPHeader->ulSourceIPAddress ),
++                                               ( unsigned long ) FreeRTOS_ntohl( pxIPHeader->ulDestinationIPAddress ) ) );
+                         }
+                         break;
+                 #endif /* ( ipconfigUSE_IPv4 != 0 ) */
+@@ -950,8 +950,8 @@
+             {
+                 if( pxSocket->u.xTCP.ucKeepRepCount > 3U ) /*_RB_ Magic number. */
+                 {
+-                    FreeRTOS_debug_printf( ( "keep-alive: giving up %xip:%u\n",
+-                                             ( unsigned ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4, /* IP address of remote machine. */
++                    FreeRTOS_debug_printf( ( "keep-alive: giving up %lxip:%u\n",
++                                             ( unsigned long ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4, /* IP address of remote machine. */
+                                              pxSocket->u.xTCP.usRemotePort ) );                 /* Port on remote machine. */
+                     vTCPStateChange( pxSocket, eCLOSE_WAIT );
+                     lDataLen = -1;
+@@ -976,8 +976,8 @@
+ 
+                         if( xTCPWindowLoggingLevel != 0 )
+                         {
+-                            FreeRTOS_debug_printf( ( "keep-alive: %xip:%u count %u\n",
+-                                                     ( unsigned ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4,
++                            FreeRTOS_debug_printf( ( "keep-alive: %lxip:%u count %u\n",
++                                                     ( unsigned long ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4,
+                                                      pxSocket->u.xTCP.usRemotePort,
+                                                      pxSocket->u.xTCP.ucKeepRepCount ) );
+                         }
+diff --git a/source/FreeRTOS_TCP_Transmission_IPv4.c b/source/FreeRTOS_TCP_Transmission_IPv4.c
+index b29fdb3..19eb3a9 100644
+--- a/source/FreeRTOS_TCP_Transmission_IPv4.c
++++ b/source/FreeRTOS_TCP_Transmission_IPv4.c
+@@ -360,9 +360,9 @@ BaseType_t prvTCPPrepareConnect_IPV4( FreeRTOS_Socket_t * pxSocket )
+             /* Count the number of times it could not find the ARP address. */
+             pxSocket->u.xTCP.ucRepCount++;
+ 
+-            FreeRTOS_debug_printf( ( "ARP for %xip (using %xip): rc=%d %02x-%02x-%02x-%02x-%02x-%02x\n",
+-                                     ( unsigned ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4,
+-                                     ( unsigned ) FreeRTOS_htonl( ulRemoteIP ),
++            FreeRTOS_debug_printf( ( "ARP for %lxip (using %lxip): rc=%d %02x-%02x-%02x-%02x-%02x-%02x\n",
++                                     ( unsigned long ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4,
++                                     ( unsigned long ) FreeRTOS_htonl( ulRemoteIP ),
+                                      eReturned,
+                                      xEthAddress.ucBytes[ 0 ],
+                                      xEthAddress.ucBytes[ 1 ],
+diff --git a/source/FreeRTOS_TCP_Utils.c b/source/FreeRTOS_TCP_Utils.c
+index 0d81e39..5b06049 100644
+--- a/source/FreeRTOS_TCP_Utils.c
++++ b/source/FreeRTOS_TCP_Utils.c
+@@ -91,7 +91,7 @@
+  */
+     void prvSocketSetMSS( FreeRTOS_Socket_t * pxSocket )
+     {
+-        switch( pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE */
++        switch( ( unsigned ) pxSocket->bits.bIsIPv6 ) /* LCOV_EXCL_BR_LINE */
+         {
+             #if ( ipconfigUSE_IPv4 != 0 )
+                 case ipFALSE_BOOL:
+diff --git a/source/FreeRTOS_TCP_Utils_IPv4.c b/source/FreeRTOS_TCP_Utils_IPv4.c
+index b45a805..a97e998 100644
+--- a/source/FreeRTOS_TCP_Utils_IPv4.c
++++ b/source/FreeRTOS_TCP_Utils_IPv4.c
+@@ -82,7 +82,7 @@ void prvSocketSetMSS_IPV4( FreeRTOS_Socket_t * pxSocket )
+         }
+     }
+ 
+-    FreeRTOS_debug_printf( ( "prvSocketSetMSS: %u bytes for %xip port %u\n", ( unsigned ) ulMSS, ( unsigned ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4, pxSocket->u.xTCP.usRemotePort ) );
++    FreeRTOS_debug_printf( ( "prvSocketSetMSS: %u bytes for %lxip port %u\n", ( unsigned ) ulMSS, ( unsigned long ) pxSocket->u.xTCP.xRemoteIP.ulIP_IPv4, pxSocket->u.xTCP.usRemotePort ) );
+ 
+     pxSocket->u.xTCP.usMSS = ( uint16_t ) ulMSS;
+ }
+diff --git a/source/portable/BufferManagement/BufferAllocation_2.c b/source/portable/BufferManagement/BufferAllocation_2.c
+index 6cfa8c4..c453e78 100644
+--- a/source/portable/BufferManagement/BufferAllocation_2.c
++++ b/source/portable/BufferManagement/BufferAllocation_2.c
+@@ -63,7 +63,7 @@
+     #define baMINIMAL_BUFFER_SIZE    sizeof( ARPPacket_t )
+ #endif /* ipconfigUSE_TCP == 1 */
+ 
+-#define baALIGNMENT_BYTES            ( sizeof( size_t ) )
++#define baALIGNMENT_BYTES            portBYTE_ALIGNMENT
+ #define baALIGNMENT_MASK             ( baALIGNMENT_BYTES - 1U )
+ #define baADD_WILL_OVERFLOW( a, b )    ( ( a ) > ( SIZE_MAX - ( b ) ) )
+ 
+@@ -170,7 +170,7 @@ uint8_t * pucGetNetworkBuffer( size_t * pxRequestedSizeBytes )
+     uint8_t * pucEthernetBuffer = NULL;
+     size_t uxMaxAllowedBytes = ( SIZE_MAX >> 1 );
+     size_t xSize = *pxRequestedSizeBytes;
+-    size_t xBytesRequiredForAlignment, xAllocatedBytes;
++    size_t xBytesRequiredForAlignment, xAllocatedBytes = 0U;
+     BaseType_t xIntegerOverflowed = pdFALSE;
+ 
+     if( xSize < baMINIMAL_BUFFER_SIZE )
+@@ -257,7 +257,7 @@ NetworkBufferDescriptor_t * pxGetNetworkBufferWithDescriptor( size_t xRequestedS
+     size_t uxCount;
+     size_t uxMaxAllowedBytes = ( SIZE_MAX >> 1 );
+     size_t xRequestedSizeBytesCopy = xRequestedSizeBytes;
+-    size_t xBytesRequiredForAlignment, xAllocatedBytes;
++    size_t xBytesRequiredForAlignment, xAllocatedBytes = 0U;
+     BaseType_t xIntegerOverflowed = pdFALSE;
+ 
+     if( ( xRequestedSizeBytesCopy < ( size_t ) baMINIMAL_BUFFER_SIZE ) )

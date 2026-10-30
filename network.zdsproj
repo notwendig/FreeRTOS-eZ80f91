@@ -24,6 +24,16 @@
 <file filter-key="">network\source\FreeRTOS_TCP_Utils.c</file>
 <file filter-key="">network\source\FreeRTOS_TCP_WIN.c</file>
 <file filter-key="">network\source\FreeRTOS_UDP_IP.c</file>
+<file filter-key="">network\source\FreeRTOS_BitConfig.c</file>
+<file filter-key="">network\source\FreeRTOS_Routing.c</file>
+<file filter-key="">network\source\FreeRTOS_IPv4.c</file>
+<file filter-key="">network\source\FreeRTOS_IPv4_Sockets.c</file>
+<file filter-key="">network\source\FreeRTOS_IPv4_Utils.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_IP_IPv4.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_State_Handling_IPv4.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_Transmission_IPv4.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_Utils_IPv4.c</file>
+<file filter-key="">network\source\FreeRTOS_UDP_IPv4.c</file>
 </files>
 
 <!-- configuration information -->

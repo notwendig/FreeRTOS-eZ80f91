@@ -134,6 +134,8 @@ determine how many packet buffers remain in the Rx buffer.
 #include "FreeRTOS_IP.h"
 #include "FreeRTOS_IP_Private.h"
 #include "NetworkInterface.h"
+#include "FreeRTOS_Routing.h"
+static NetworkInterface_t *pxEmacInterface;
 #include "NetworkBufferManagement.h"
 #include "Stdio.h"
 #include "ez80_emac.h"
@@ -405,9 +407,9 @@ static void netWatchTask(void*x)
 		vTaskDelay(pdMS_TO_TICKS(2000));  // delay before next attempt
 		if(iow == iowatch && xIsEthernetConnected() == pdFALSE)
 		{
-			static const IPStackEvent_t xNetworkDownEvent = { eNetworkDownEvent, NULL };
+			/* FreeRTOS 4 routes link changes through the owning interface. */
 			FreeRTOS_debug_printf( ("Link down, restartig.\n") );
-			xSendEventStructToIPTask( &xNetworkDownEvent, xDontBlock );
+			FreeRTOS_NetworkDown( pxEmacInterface );
 			vTaskDelay(pdMS_TO_TICKS(15000));
 		}
 	}
@@ -474,6 +476,8 @@ static void RxTask(void*x)
 							memcpy(nwDis->pucEthernetBuffer, psrc, plen);
 						}
 
+						nwDis->pxInterface = pxEmacInterface;
+						nwDis->pxEndPoint = FreeRTOS_MatchingEndpoint( pxEmacInterface, nwDis->pucEthernetBuffer );
 						xNetworkRxEvent.pvData  = nwDis;
 						if(xSendEventStructToIPTask( &xNetworkRxEvent, xDontBlock ) == pdFALSE)
 						{
@@ -908,3 +912,31 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 
 }
 // End of file
+
+/* FreeRTOS-Plus-TCP 4 interface descriptor for the existing EMAC driver. */
+static BaseType_t prvEmacInitialise( NetworkInterface_t *pxInterface )
+{
+    return xNetworkInterfaceInitialise();
+}
+static BaseType_t prvEmacOutput( NetworkInterface_t *pxInterface,
+                               NetworkBufferDescriptor_t * const pxBuffer,
+                               BaseType_t xReleaseAfterSend )
+{
+    return xNetworkInterfaceOutput( pxBuffer, xReleaseAfterSend );
+}
+BaseType_t xGetPhyLinkStatus( NetworkInterface_t *pxInterface )
+{
+    return xIsEthernetConnected();
+}
+NetworkInterface_t *pxFillInterfaceDescriptor( BaseType_t xEMACIndex,
+                                              NetworkInterface_t *pxInterface )
+{
+    memset( pxInterface, 0, sizeof( *pxInterface ) );
+    pxInterface->pcName = "ez80-emac";
+    pxInterface->pfInitialise = prvEmacInitialise;
+    pxInterface->pfOutput = prvEmacOutput;
+    pxInterface->pfGetPhyLinkStatus = xGetPhyLinkStatus;
+    pxEmacInterface = pxInterface;
+    FreeRTOS_AddNetworkInterface( pxInterface );
+    return pxInterface;
+}

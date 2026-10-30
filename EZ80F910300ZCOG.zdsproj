@@ -60,6 +60,16 @@
 <file filter-key="">EZ80F910300ZCOG\src\tty.c</file>
 <file filter-key="">EZ80F910300ZCOG\src\uz.c</file>
 <file filter-key="">EZ80F910300ZCOG\src\vectors24.asm</file>
+<file filter-key="">network\source\FreeRTOS_BitConfig.c</file>
+<file filter-key="">network\source\FreeRTOS_Routing.c</file>
+<file filter-key="">network\source\FreeRTOS_IPv4.c</file>
+<file filter-key="">network\source\FreeRTOS_IPv4_Sockets.c</file>
+<file filter-key="">network\source\FreeRTOS_IPv4_Utils.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_IP_IPv4.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_State_Handling_IPv4.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_Transmission_IPv4.c</file>
+<file filter-key="">network\source\FreeRTOS_TCP_Utils_IPv4.c</file>
+<file filter-key="">network\source\FreeRTOS_UDP_IPv4.c</file>
 </files>
 
 <!-- configuration information -->

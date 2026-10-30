@@ -77,6 +77,12 @@
  *****************************************************************************/
 
 #ifndef FREERTOS_IP_CONFIG_H
+/* Keep the board's existing single-interface IPv4 behavior. */
+#define ipconfigUSE_DHCP_HOOK 0
+#define ipconfigUSE_IPv4 1
+#define ipconfigUSE_IPv6 0
+#define ipconfigIPv4_BACKWARD_COMPATIBLE 1
+#define ipconfigCOMPATIBLE_WITH_SINGLE 1
 #define FREERTOS_IP_CONFIG_H
 #include "stdint.h"
 #include "Stdio.h"
@@ -159,7 +165,6 @@ a socket. */
 #define ipconfigDNS_REQUEST_ATTEMPTS		2
 
 
-#define ipconfigHAS_INLINE_FUNCTIONS		0
 /* The IP stack executes it its own task (although any application task can make
 use of its services through the published sockets API). ipconfigUDP_TASK_PRIORITY
 sets the priority of the task that executes the IP stack.  The priority is a
@@ -184,7 +189,6 @@ number generation is performed via this macro to allow applications to use their
 own random number generation method.  For example, it might be possible to
 generate a random number by sampling noise on an analogue input. */
 extern long uxRand();
-#define ipconfigRAND32()						uxRand()
 
 /* If ipconfigUSE_NETWORK_EVENT_HOOK is set to 1 then FreeRTOS+TCP will call the
 network event hook at the appropriate times.  If ipconfigUSE_NETWORK_EVENT_HOOK

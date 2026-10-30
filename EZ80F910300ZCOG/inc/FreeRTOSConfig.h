@@ -36,6 +36,10 @@ int uzip(uint8_t *dest, size_t dlen, const uint8_t *source, size_t slen);
 #define configMAX_PRIORITIES                    16U
 #define configMINIMAL_STACK_SIZE                512U
 #define configMAX_TASK_NAME_LEN                 16
+/* ZDS has no scalar uint64_t. Split tick conversion before multiplying. */
+#define pdTICKS_TO_MS(xTicks) \
+    (((uint32_t)(xTicks) / configTICK_RATE_HZ) * 1000UL + \
+     (((uint32_t)(xTicks) % configTICK_RATE_HZ) * 1000UL) / configTICK_RATE_HZ)
 #define configUSE_16_BIT_TICKS                  1
 #define configIDLE_SHOULD_YIELD                 1
 #define configUSE_TASK_NOTIFICATIONS            1
