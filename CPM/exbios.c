@@ -30,7 +30,8 @@
 
 #include "exbios.h"
 #include "task.h"
-#include "uzlib.h"
+#include <eZ80F91.h>
+#include "cpm_disks.h"
 #include "queue.h"
 
 /* FreeRTOS+CLI includes. */
@@ -50,15 +51,13 @@
 // CP/M 2.2 console in queue
 static QueueHandle_t cpminq;
 
-static const char pcLoadRamdiskMessage[] = "Be patient decompressing and loading of the Ramdisk takes a while.\n\r";
 static const char pcLoadMonitorMessage[] = "Starting ZSID stand alone.\n\r";
 #define MINIMON 0xD000
 static const char pcWelcomeMessage[] = "\n\rEZ80F91 CP/M 2.2 Console " VERSION "\n\r";
 
 static TaskHandle_t thcpm;
-static Socket_t xSocketRDisk, xConnectedSocket;
-static unsigned char *ramdisk = NULL;
-static struct freertos_sockaddr xRDiskAddress;
+static Socket_t xConnectedSocket;
+static unsigned char * const ramdisk = (unsigned char *)CPM_DISK_BASE;
 static uint8_t  curdisk = -1;
 static uint16_t curFDCT = 0;	// fdc-port: # of track
 static uint16_t curFDCS = 0;	// fdc-port: # of sector
@@ -67,15 +66,6 @@ static uint8_t  curFDOP = 0;	// fdc-port: command 0=read, 1=write
 static char 	*dma= 0;
 static dpb_t 	*dpb= 0;
 static uint16_t sequenz = 0;
-
-/* Keep the generated disk image reusable; placement belongs to the board profile. */
-#ifdef CPM22_IMAGE_EXTERNAL
-#define CPM22_IMAGE_PLACEMENT _At 0x100000
-#else
-#define CPM22_IMAGE_PLACEMENT
-#endif
-#include "CPM22_A.c"
-#undef CPM22_IMAGE_PLACEMENT
 
 // Default disk IBM 3740 8" 77Trk*26Sec
 static const uint8_t  defxlt[26] = {
@@ -171,108 +161,54 @@ static uint8_t *z80BiosConsoleIO(trapframe_t *context)
 
 static const pdu_t *doRamDiskReq(pdu_t *req)
 {
-	size_t offset;
-	pdu_t *rsp = 0;
-	pdutype_t cmd = req->hdr.cmdid;
-
-	
-	if(ramdisk)
-	{
-		switch(cmd)
-		{
-			case RDSK_Lifesign:
-			case RDSK_MountRequest:
-			case RDSK_UnmountRequest:
-				rsp = rsp = FreeRTOS_GetUDPPayloadBuffer( sizeof(hdr_t), portMAX_DELAY );
-				if(rsp)
-				{
-					memcpy(rsp, req, sizeof(hdr_t));
-					rsp->hdr.pdusz = sizeof(hdr_t);
-				}
-				break;
-			case RDSK_ReadRequest:
-				rsp = FreeRTOS_GetUDPPayloadBuffer( sizeof(hdr_t) + sizeof(ioreq_t), portMAX_DELAY );
-
-				if(rsp)
-				{
-					uint8_t sect = req->d.ioreq.sect - 1;
-					memcpy(rsp,req,sizeof(hdr_t) + sizeof(ioreq_t) - SECTORSZ);
-					if(sect < 26)
-					{
-						offset = (req->d.ioreq.track * 26 + sect) * SECTORSZ;
-						memcpy(rsp->d.ioreq.data,ramdisk+offset,SECTORSZ);
-					}
-					else
-						rsp->hdr.cmdid |= RDSK_ErrorFlag;
-				}
-				break;
-			case RDSK_WriteRequest:
-				rsp = FreeRTOS_GetUDPPayloadBuffer( sizeof(hdr_t) + sizeof(ioreq_t) - SECTORSZ, portMAX_DELAY );
-
-				if(rsp)
-				{
-					uint8_t sect = req->d.ioreq.sect - 1;
-					memcpy(rsp,req,sizeof(hdr_t) + sizeof(ioreq_t) - SECTORSZ);
-					if(sect < 26)
-					{
-						offset = (req->d.ioreq.track * 26 + sect) * SECTORSZ;
-						memcpy(ramdisk+offset, req->d.ioreq.data,SECTORSZ);
-					}
-					else
-						rsp->hdr.cmdid |= RDSK_ErrorFlag;
-				}
-				break;
-		}
-		if(rsp)
-		{
-			rsp->hdr.cmdid |= RDSK_Response;
-			rsp->hdr.seqnz = ~sequenz;
-			sequenz++;
-			FreeRTOS_ReleaseUDPPayloadBuffer( ( void * ) req );
-		}
-	}
-	return rsp;
-}
-
-static const pdu_t *doRDiskReq(pdu_t *req)
-{
-
-	pdu_t *rsp = 0;
-	int32_t io, iox = req->hdr.pdusz;
-	uint24_t cmdrsp = (req->hdr.cmdid|RDSK_Response);
-
-	req->hdr.seqnz = sequenz;
-
-	io = FreeRTOS_sendto( xSocketRDisk, req, req->hdr.pdusz, FREERTOS_ZERO_COPY, &xRDiskAddress, sizeof(xRDiskAddress));
-	if(io <= 0)
-		FreeRTOS_ReleaseUDPPayloadBuffer( ( void * ) req );
-	else if(io == iox)
-	{
-		struct freertos_sockaddr xFrom;
-		socklen_t xFromLength;
-		xFromLength = sizeof(xFrom);
-
-		io = FreeRTOS_recvfrom( xSocketRDisk, &rsp, 0, FREERTOS_ZERO_COPY, &xFrom, &xFromLength );
-		if(io > 0)
-		{
-			if(	io < sizeof(hdr_t) ||
-				io != rsp->hdr.pdusz   ||
-				rsp->hdr.seqnz != (uint16_t) ~sequenz ||
-				(rsp->hdr.cmdid & ~RDSK_ErrorFlag) != cmdrsp)
-			{
-				FreeRTOS_ReleaseUDPPayloadBuffer( ( void * ) rsp);
-				rsp = 0;
-			}
-			else if(rsp->hdr.cmdid & RDSK_ErrorFlag)
-				sequenz=0;
-			else
-				sequenz++;
-		}
-		else
-			rsp = 0;
-	}
-
-	return rsp;
+    pdu_t *rsp;
+    size_t offset = 0;
+    unsigned char *disk;
+    uint8_t valid = 0;
+    size_t length = sizeof(hdr_t);
+    pdutype_t cmd = req->hdr.cmdid;
+    if(cmd == RDSK_ReadRequest)
+        length += sizeof(ioreq_t);
+    else if(cmd == RDSK_WriteRequest)
+        length += sizeof(ioreq_t) - SECTORSZ;
+    rsp = FreeRTOS_GetUDPPayloadBuffer(length, portMAX_DELAY);
+    if(!rsp)
+        return NULL;
+    memcpy(rsp, req, sizeof(hdr_t));
+    rsp->hdr.pdusz = length;
+    if(cmd == RDSK_ReadRequest || cmd == RDSK_WriteRequest)
+        valid = cpm_disk_sector(req->hdr.devid,
+            req->d.ioreq.track, req->d.ioreq.sect, &offset);
+    disk = ramdisk + offset;
+    switch(cmd)
+    {
+        case RDSK_Lifesign:
+        case RDSK_MountRequest:
+        case RDSK_UnmountRequest:
+            valid = cpm_disk_present(req->hdr.devid);
+            break;
+        case RDSK_ReadRequest:
+            memcpy(&rsp->d.ioreq, &req->d.ioreq, sizeof(ioreq_t) - SECTORSZ);
+            if(valid)
+                memcpy(rsp->d.ioreq.data, disk, SECTORSZ);
+            else
+                memset(rsp->d.ioreq.data, 0, SECTORSZ);
+            break;
+        case RDSK_WriteRequest:
+            memcpy(&rsp->d.ioreq, &req->d.ioreq, sizeof(ioreq_t) - SECTORSZ);
+            if(valid)
+                memcpy(disk, req->d.ioreq.data, SECTORSZ);
+            break;
+        default:
+            valid = 0;
+            break;
+    }
+    if(!valid)
+        rsp->hdr.cmdid |= RDSK_ErrorFlag;
+    rsp->hdr.cmdid |= RDSK_Response;
+    rsp->hdr.seqnz = ~sequenz++;
+    FreeRTOS_ReleaseUDPPayloadBuffer(req);
+    return rsp;
 }
 
 static uint8_t *z80BiosDiskIO(trapframe_t *context)
@@ -359,14 +295,7 @@ static uint8_t *z80BiosDiskIO(trapframe_t *context)
 
 						//FreeRTOS_debug_printf(("req: cmd=%hhd, did=%hhd, sz=%hd sqz=%hd\n",req->hdr.cmdid,req->hdr.devid,req->hdr.pdusz,req->hdr.seqnz));
 
-						if(!req->hdr.devid)
-							rsp = doRamDiskReq(req);
-						else
-						{
-							// Request from server
-							uint8_t devid = req->hdr.devid;
-							rsp = doRDiskReq(req);
-						}
+						rsp = doRamDiskReq(req);
 
 						if( rsp )
 						{
@@ -414,10 +343,7 @@ static uint8_t *z80BiosDiskIO(trapframe_t *context)
 							req->d.ioreq.track = curFDCT;
 							req->d.ioreq.sect = curFDCS;
 							memcpy(&req->d.ioreq.data, dma, SECSIZE);
-							if(!curdisk)
-								rsp = doRamDiskReq(req);
-							else
-								rsp = doRDiskReq(req);
+							rsp = doRamDiskReq(req);
 
 							if(rsp)
 							{
@@ -439,10 +365,7 @@ static uint8_t *z80BiosDiskIO(trapframe_t *context)
 							req->hdr.devid = curdisk;
 							req->d.ioreq.track = curFDCT;
 							req->d.ioreq.sect  = curFDCS;
-							if(!curdisk)
-								rsp = doRamDiskReq(req);
-							else
-								rsp = doRDiskReq(req);
+							rsp = doRamDiskReq(req);
 							if(rsp)
 							{
 								if(!(rsp->hdr.cmdid & RDSK_ErrorFlag))
@@ -517,44 +440,14 @@ uint8_t *exbioscall(trapframe_t* arg)
 	return *arg->pc;
 }
 
-static    int uzipcb(struct uzlib_uncomp *uncomp)
-{
-	char prompt ='#';
-	FreeRTOS_send( xConnectedSocket,  ( void * ) &prompt,  1, 0 );
-	return 0;
-}
-
 void CPM22Task(uint8_t* ram)
-{		
-	if(!ramdisk)
-	{
-		size_t srclen = cpm22img_length;
-		size_t dstlen = (size_t)*(long*)&cpm22img[srclen-4];
-		if(dstlen == 256256U && !ramdisk)
-		{
-			ramdisk = pvPortMalloc(dstlen);
-			if(ramdisk)
-			{
-				int i = strlen(pcLoadRamdiskMessage);
-				FreeRTOS_send( xConnectedSocket,  ( void * ) pcLoadRamdiskMessage,i,0);
-				i = uzipp(ramdisk, dstlen, cpm22img, srclen, uzipcb);
-				if(i != TINF_DONE)
-				{
-					vPortFree(ramdisk);
-					ramdisk = NULL; 
-				}
-			}
-		}
-		if(!ramdisk)
-		{
-			static const char error[] = "Ramdisk decompression failed.\r\n";
-			FreeRTOS_send(xConnectedSocket, (void *)error, sizeof(error)-1, 0);
-			thcpm = NULL;
-			vTaskDelete(NULL);
-			return;
-		}
-	}
-	
+{
+    /* CS2 is narrowed before heap initialization, in init_params_f91.asm. */
+    CS3_CTL = 0;
+    CS3_LBR = 0x20;
+    CS3_UBR = 0xAF;
+    CS3_CTL = 0x08;
+
 	memcpy(ram+0x80,ramdisk,0x80);
 	asm(" ld		a,(ix+8)");
 	asm(" ld		mb,a");
@@ -612,8 +505,6 @@ int cpmthread = pdFALSE;
 		xConnectedSocket = FreeRTOS_accept( xListeningSocket, &xClient, &xSize );
 		configASSERT( xConnectedSocket != FREERTOS_INVALID_SOCKET );
 
-		xRDiskAddress.sin_addr = xClient.sin_addr;
-		xRDiskAddress.sin_port = FreeRTOS_htons( RDSK_PORT );
 
 		if(cpmthread != pdPASS || thcpm == NULL)
 		{
@@ -647,10 +538,6 @@ int cpmthread = pdFALSE;
 	
 	FreeRTOS_closesocket(xConnectedSocket);
 	FreeRTOS_closesocket(xListeningSocket);
-	if(ramdisk)
-	{
-		vPortFree(ramdisk);
-		ramdisk = NULL;
-	}
+
 }
 #endif // ifdef CPM22

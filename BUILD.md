@@ -81,8 +81,8 @@ sources. Both configurations provide all include paths, thread and CP/M definiti
 `Release/EZ80F910300ZCOG.hex`/`.lod`/`.map`:
 
 - Internal flash: `0x000000–0x03FFFF` for program code and ordinary constants.
-- External AMD flash: the compressed CP/M disk image is fixed at `0x100000`
-  (`CPM22_IMAGE_EXTERNAL`); its length constants remain with the program.
+- CP/M disks: raw writable CS3 RAM image at `0x200000–0xAFFFFF`,
+  containing A/B/C/D/I/J consecutively. No embedded compressed disk image.
 - Application data, stack and first heap: external RAM `0xC00000–0xC3FFFF`.
   CP/M reserves `0xB80000–0xB8FFFF`; the additional heap remains at
   `0xB90000–0xBFFFFF`.
@@ -90,10 +90,25 @@ sources. Both configurations provide all include paths, thread and CP/M definiti
 `FLASH_BOOT` distinguishes cold reset from the CP/M BIOS trap at the shared
 reset vector, preserving the task registers for BIOS calls. A debugger-provided
 stack is supported before Timer 0 starts; board and port initialization enable
-the mixed ADL mode required by FreeRTOS and CP/M. The writable RAM disk is still allocated and decompressed on demand;
-only its compressed, read-only initial image moves to external flash. The HEX/LOD
-contains both flash regions. Use the matching 99C0879 target; the 99C0942 target
-has different RAM, flash and oscillator settings.
+the mixed ADL mode required by FreeRTOS and CP/M. CP/M starts directly from
+raw CS3 disks without decompression or disk-sized heap allocation. The BIOS uses
+IBM 3740 geometry (boot tracks only on A) and 4mb-hd geometry for I/J.
+
+From the parent qemuez80f91 repository, rebuild the system tracks and images:
+
+```sh
+python3 tools/cpm/build_system.py
+python3 tools/cpm/build_disks.py
+```
+
+Use `-M ez80f91-minimal,cs3-file=/absolute/path/to/cs3-abcdij.img` with
+`cs3=ram` (the default). QEMU saves raw changes on orderly exit. `start.sh`
+creates a separate writable `ez80f91_cs3.<debugport>` from the bundled image
+on its first launch. Existing writable images are retained; to adopt a changed
+BIOS, use a newly generated image or replace its system tracks while stopped.
+Early board startup narrows CS2 decoding to B80000–BFFFFF before heap
+initialization; the CP/M task enables CS3 at 200000–AFFFFF. CP/M RAM and both
+application heap regions remain outside the disk window.
 
 Close the ZDS project **before** pulling a project configuration update, then
 reopen it and run **Rebuild All**. An already-open IDE can save its cached old

@@ -212,7 +212,7 @@
 <tool name="Compiler">
 <options>
 <option name="padbranch" type="string" change-action="compile">Off</option>
-<option name="define" type="string" change-action="compile">NDEBUG,_EZ80F91,_EZ80ACCLAIM!,_MULTI_THREAD,MEMPART=RAMONLY,CPM22,CPM22_IMAGE_EXTERNAL</option>
+<option name="define" type="string" change-action="compile">NDEBUG,_EZ80F91,_EZ80ACCLAIM!,_MULTI_THREAD,MEMPART=RAMONLY,CPM22</option>
 <option name="genprintf" type="boolean" change-action="compile">false</option>
 <option name="keepasm" type="boolean" change-action="none">false</option>
 <option name="keeplst" type="boolean" change-action="none">true</option>
@@ -230,7 +230,7 @@
 </tool>
 <tool name="Debugger">
 <options>
-<option name="target" type="string" change-action="rebuild">eZ80F91_99C0879-AMD_Flash</option>
+<option name="target" type="string" change-action="rebuild">eZ80F91_qemu_99C0879-AMD_Flash</option>
 <option name="debugtool" type="string" change-action="none">EthernetSmartCable</option>
 <option name="usepageerase" type="boolean" change-action="none">true</option>
 </options>

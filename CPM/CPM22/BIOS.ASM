@@ -58,17 +58,17 @@ DPBASE:	DW	TRANS,0000H
 ;	disk parameter header for disk 01
 	DW	TRANS,0000H
 	DW	0000H,0000H
-	DW	DIRBF,DPBLK
+	DW	DIRBF,DATBLK
 	DW	CHK01,ALL01
 ;	disk parameter header for disk 02
 	DW	TRANS,0000H
 	DW	0000H,0000H
-	DW	DIRBF,DPBLK
+	DW	DIRBF,DATBLK
 	DW	CHK02,ALL02
 ;	disk parameter header for disk 03
 	DW	TRANS,0000H
 	DW	0000H,0000H
-	DW	DIRBF,DPBLK
+	DW	DIRBF,DATBLK
 	DW	CHK03,ALL03
 ;
 ;	sector translate vector for the IBM 8" disks
@@ -94,6 +94,12 @@ DPBLK:  DW	26		;sectors per track
 	DW	16		;check size
 	DW	2		;track offset
 ;
+DATBLK: DW 26
+    DB 3,7,0
+    DW 249,63
+    DB 192,0
+    DW 16,0
+;
 ;	fixed data tables for 4MB harddisk
 ;
 ;	disk parameter header drive 8 = I
@@ -112,33 +118,15 @@ HDBAS9:
 ;
 ;	sector translate vector for the hardisk
 ;
-HDTRA:	DB	1,2,3,4,5,6,7,8,9,10
-	DB	11,12,13,14,15,16,17,18,19,20
-	DB	21,22,23,24,25,26,27,28,29,30
-	DB	31,32,33,34,35,36,37,38,39,40
-	DB	41,42,43,44,45,46,47,48,49,50
-	DB	51,52,53,54,55,56,57,58,59,60
-	DB	61,62,63,64,65,66,67,68,69,70
-	DB	71,72,73,74,75,76,77,78,79,80
-	DB	81,82,83,84,85,86,87,88,89,90
-	DB	91,92,93,94,95,96,97,98,99,100
-	DB	101,102,103,104,105,106,107,108,109,110
-	DB	111,112,113,114,115,116,117,118,119,120
-	DB	121,122,123,124,125,126,127,128
+HDTRA: DB 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+    DB 17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32
 ;
-;       disk parameter block for harddisk
-;
-HDBLK:; 4mb-hd2 diskdef
-	DW    128	;sectors per track
-	DB    4		;block shift factor
-	DB    15	;block mask
-	DB    0		;extent mask
-	DW    2039	;disk size-1
-	DW    1023	;directory max
-	DB    255	;alloc 0
-	DB    255	;alloc 1
-	DW    0		;check size
-	DW    0		;track offset
+HDBLK: ; cpmtools 4mb-hd / p2dos
+    DW 32
+    DB 4,15,0
+    DW 2047,255
+    DB 240,0
+    DW 0,0
 ;
 ;	end of fixed tables
 ;
@@ -391,11 +379,11 @@ BEGDAT:	EQU	$		;beginning of data area
 
 DIRBF:	DS	128		;scratch directory area
 ALL00:	DS	31		;allocation vector 0
-ALL01:	DS	31		;allocation vector 1
-ALL02:	DS	31		;allocation vector 2
-ALL03:	DS	31		;allocation vector 3
-ALLHD8:	DS	255		;allocation vector harddisk 8 I
-ALLHD9:	DS	255		;allocation vector harddisk 9 J
+ALL01:	DS	32		;allocation vector 1
+ALL02:	DS	32		;allocation vector 2
+ALL03:	DS	32		;allocation vector 3
+ALLHD8:	DS	256		;allocation vector harddisk 8 I
+ALLHD9:	DS	256		;allocation vector harddisk 9 J
 CHK00:	DS	16		;check vector 0
 CHK01:	DS	16		;check vector 1
 CHK02:	DS	16		;check vector 2
