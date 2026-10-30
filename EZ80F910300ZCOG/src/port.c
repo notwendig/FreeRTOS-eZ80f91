@@ -27,6 +27,8 @@ HeapRegion_t xHeapRegions[] =
 
 void portSetup()
 {
+	/* ZDS can enter main with MADL cleared after a download/reset. */
+	asm("stmix");
 	xHeapRegions[0].pucStartAddress = &_heapbot;
 	xHeapRegions[0].xSizeInBytes = (unsigned)&_heaptop - (unsigned)&_heapbot;
 	#if MEMPART==RAMONLY

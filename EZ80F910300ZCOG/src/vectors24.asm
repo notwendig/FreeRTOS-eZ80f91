@@ -104,7 +104,13 @@ __flash_reset_or_trap:
     ld hl,-6
     or a
     sbc hl,sp
+    jr z,__flash_cold_start
+    ; ZDS reset configures memory and may provide a nonzero stack.
+    ; Timer 0 is enabled only after the RTOS scheduler has started.
+    in0 a,(%60)             ; eZ80F91 TMR0_CTL
+    and a,1
     jr nz,__flash_task_trap
+__flash_cold_start:
     pop hl
     pop af
     di

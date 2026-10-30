@@ -52,6 +52,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Minimum default initialization for eZ80F91
 __init:	
+    stmix                   ; The FreeRTOS/CPM port requires mixed-mode returns.
     ; disable internal peripheral interrupt sources
     ; -- this will help during a RAM debug session --
 

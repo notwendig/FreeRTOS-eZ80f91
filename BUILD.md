@@ -88,7 +88,9 @@ sources. Both configurations provide all include paths, thread and CP/M definiti
   `0xB90000–0xBFFFFF`.
 
 `FLASH_BOOT` distinguishes cold reset from the CP/M BIOS trap at the shared
-reset vector, preserving the task registers for BIOS calls. The writable RAM disk is still allocated and decompressed on demand;
+reset vector, preserving the task registers for BIOS calls. A debugger-provided
+stack is supported before Timer 0 starts; board and port initialization enable
+the mixed ADL mode required by FreeRTOS and CP/M. The writable RAM disk is still allocated and decompressed on demand;
 only its compressed, read-only initial image moves to external flash. The HEX/LOD
 contains both flash regions. Use the matching 99C0879 target; the 99C0942 target
 has different RAM, flash and oscillator settings.
