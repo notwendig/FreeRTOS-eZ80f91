@@ -107,4 +107,31 @@ _firstTASK:
 	ld		(_criticalcounter),a
 $$:	ret
 
+
+    ; External 16-bit I/O access. ZDS arguments use three-byte stack slots.
+    xdef _cpmPortRead
+_cpmPortRead:
+    push ix
+    ld ix,0
+    add ix,sp
+    ld bc,0
+    ld c,(ix+6)
+    ld b,(ix+7)
+    in a,(c)
+    pop ix
+    ret
+
+    xdef _cpmPortWrite
+_cpmPortWrite:
+    push ix
+    ld ix,0
+    add ix,sp
+    ld bc,0
+    ld c,(ix+6)
+    ld b,(ix+7)
+    ld a,(ix+9)
+    out (c),a
+    pop ix
+    ret
+
 	END

@@ -319,7 +319,25 @@ void vApplicationPingReplyHook(ePingReplyStatus_t eStatus, uint16_t usIdentifier
 const char *pcApplicationHostnameHook()
 {
 	extern const char *hostname;
-	return hostname;
+    extern unsigned char cpmPortRead(unsigned short port);
+    static char boardHostname[64];
+    static unsigned char checked;
+    unsigned char i;
+    if(!checked)
+    {
+        checked = 1;
+        if(cpmPortRead(0xFF08U) == 'H' && cpmPortRead(0xFF09U) == 'O' &&
+           cpmPortRead(0xFF0AU) == 'S' && cpmPortRead(0xFF0BU) == 'T')
+        {
+            for(i=0; i<63; i++)
+            {
+                boardHostname[i] = cpmPortRead(0xFF0CU+i);
+                if(!boardHostname[i]) break;
+            }
+            boardHostname[63] = 0;
+        }
+    }
+    return boardHostname[0] ? boardHostname : hostname;
 }
 
 

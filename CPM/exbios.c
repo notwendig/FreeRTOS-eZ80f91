@@ -57,7 +57,56 @@ static const char pcWelcomeMessage[] = "\n\rEZ80F91 CP/M 2.2 Console " VERSION "
 
 static TaskHandle_t thcpm;
 static Socket_t xConnectedSocket;
-static unsigned char * const ramdisk = (unsigned char *)CPM_DISK_BASE;
+static unsigned short cpmDevPort;
+extern unsigned char cpmPortRead(unsigned short port);
+extern void cpmPortWrite(unsigned short port, unsigned char value);
+
+static unsigned char cpmFdcWait(unsigned char mask)
+{
+    unsigned short retry = 10000;
+    unsigned char status;
+    do {
+        status = cpmPortRead(cpmDevPort);
+        if(!(status & 1) || (mask && (status & mask)))
+            return status;
+    } while(--retry);
+    cpmPortWrite(cpmDevPort, 0xD0);
+    return 0x80;
+}
+
+static unsigned char cpmFdcSelect(unsigned char drive)
+{
+    cpmPortWrite(cpmDevPort+4, drive);
+    return (cpmPortRead(cpmDevPort+5) & 0x80) != 0;
+}
+
+static unsigned char cpmFdcSector(unsigned char write, unsigned char drive,
+    unsigned short track, unsigned short sector, unsigned char *data)
+{
+    unsigned char status;
+    unsigned short i;
+    size_t offset;
+    if(!cpm_disk_sector(drive, track, sector, &offset) || !cpmFdcSelect(drive))
+        return 0;
+    cpmPortWrite(cpmDevPort+6, track >> 8); /* Board extension for I:/J:. */
+    cpmPortWrite(cpmDevPort+3, track & 255);
+    cpmPortWrite(cpmDevPort, 0x10); /* Seek, target in Data Register. */
+    if(cpmFdcWait(0) & 0x98)
+        return 0;
+    cpmPortWrite(cpmDevPort+2, sector);
+    cpmPortWrite(cpmDevPort, write ? 0xA0 : 0x80);
+    for(i=0; i<128; i++)
+    {
+        status = cpmFdcWait(2);
+        if(!(status & 2) || (status & 0xDC))
+            return 0;
+        if(write)
+            cpmPortWrite(cpmDevPort+3, data[i]);
+        else
+            data[i] = cpmPortRead(cpmDevPort+3);
+    }
+    return !(cpmFdcWait(0) & 0xDD);
+}
 static uint8_t  curdisk = -1;
 static uint16_t curFDCT = 0;	// fdc-port: # of track
 static uint16_t curFDCS = 0;	// fdc-port: # of sector
@@ -162,8 +211,6 @@ static uint8_t *z80BiosConsoleIO(trapframe_t *context)
 static const pdu_t *doRamDiskReq(pdu_t *req)
 {
     pdu_t *rsp;
-    size_t offset = 0;
-    unsigned char *disk;
     uint8_t valid = 0;
     size_t length = sizeof(hdr_t);
     pdutype_t cmd = req->hdr.cmdid;
@@ -176,28 +223,24 @@ static const pdu_t *doRamDiskReq(pdu_t *req)
         return NULL;
     memcpy(rsp, req, sizeof(hdr_t));
     rsp->hdr.pdusz = length;
-    if(cmd == RDSK_ReadRequest || cmd == RDSK_WriteRequest)
-        valid = cpm_disk_sector(req->hdr.devid,
-            req->d.ioreq.track, req->d.ioreq.sect, &offset);
-    disk = ramdisk + offset;
     switch(cmd)
     {
         case RDSK_Lifesign:
         case RDSK_MountRequest:
         case RDSK_UnmountRequest:
-            valid = cpm_disk_present(req->hdr.devid);
+            valid = cpm_disk_present(req->hdr.devid) && cpmFdcSelect(req->hdr.devid);
             break;
         case RDSK_ReadRequest:
             memcpy(&rsp->d.ioreq, &req->d.ioreq, sizeof(ioreq_t) - SECTORSZ);
-            if(valid)
-                memcpy(rsp->d.ioreq.data, disk, SECTORSZ);
-            else
+            valid = cpmFdcSector(0, req->hdr.devid, req->d.ioreq.track,
+                req->d.ioreq.sect, rsp->d.ioreq.data);
+            if(!valid)
                 memset(rsp->d.ioreq.data, 0, SECTORSZ);
             break;
         case RDSK_WriteRequest:
             memcpy(&rsp->d.ioreq, &req->d.ioreq, sizeof(ioreq_t) - SECTORSZ);
-            if(valid)
-                memcpy(disk, req->d.ioreq.data, SECTORSZ);
+            valid = cpmFdcSector(1, req->hdr.devid, req->d.ioreq.track,
+                req->d.ioreq.sect, req->d.ioreq.data);
             break;
         default:
             valid = 0;
@@ -442,13 +485,29 @@ uint8_t *exbioscall(trapframe_t* arg)
 
 void CPM22Task(uint8_t* ram)
 {
-    /* CS2 is narrowed before heap initialization, in init_params_f91.asm. */
-    CS3_CTL = 0;
-    CS3_LBR = 0x20;
-    CS3_UBR = 0xAF;
-    CS3_CTL = 0x08;
-
-	memcpy(ram+0x80,ramdisk,0x80);
+    unsigned char cfg[8];
+    unsigned char i;
+    CS3_CTL = 0; /* No memory-mapped disk or CS3 RAM is required. */
+    for(i=0; i<8; i++)
+        cfg[i] = cpmPortRead(0xFF00U+i);
+    if(cfg[0] != 'W' || cfg[1] != 'D' || cfg[2] != '9' || cfg[3] != '7' ||
+       cfg[6] != 1 || !(cfg[7] & 1))
+    {
+        static const char error[] = "WD2797A device missing.\r\n";
+        FreeRTOS_send(xConnectedSocket, (void *)error, sizeof(error)-1, 0);
+        thcpm = NULL;
+        vTaskDelete(NULL);
+        return;
+    }
+    cpmDevPort = (unsigned short)cfg[4] | ((unsigned short)cfg[5] << 8);
+    if(!cpmFdcSector(0, 0, 0, 1, ram+0x80))
+    {
+        static const char error[] = "WD2797A boot read A: failed.\r\n";
+        FreeRTOS_send(xConnectedSocket, (void *)error, sizeof(error)-1, 0);
+        thcpm = NULL;
+        vTaskDelete(NULL);
+        return;
+    }
 	asm(" ld		a,(ix+8)");
 	asm(" ld		mb,a");
 	asm(" jp.s	80h");

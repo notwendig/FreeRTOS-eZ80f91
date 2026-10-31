@@ -106,11 +106,7 @@ __init:
     ld a, __CS1_CTL_INIT_PARAM
     out0 (CS1_CTL), a
 
-    ifdef CPM22
-    ld a, %B8              ; leave 200000-AFFFFF available for CS3 disks
-    else
     ld a, __CS2_LBR_INIT_PARAM
-    endif
     out0 (CS2_LBR), a
     ld a, __CS2_UBR_INIT_PARAM
     out0 (CS2_UBR), a

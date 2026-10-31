@@ -18,7 +18,7 @@ _shiftDisplay:
 		push	de
 		push	hl
 		push	iy
-			
+
 		ld		b,7
 		ld		de,0
 		ld		hl, dirtbl
@@ -41,6 +41,7 @@ shift_none:
 		jr		shift_ret
 
 shift_left:
+    scf                     ; blank fill, no carry between rows
 		rl		(iy+1)
 		rl		(iy)
 		lea 	iy,iy+2
@@ -49,17 +50,18 @@ shift_left:
 
 shift_up:
 		ld		c,(iy+1)
-		inc		b
 $$:		ld		a,(iy+2)
 		ld		(iy),a
 		ld		a,(iy+3)
 		ld		(iy+1),a
 		lea		iy,iy+2
 		djnz	$B
-		ld		(iy-2),c
+		ld		(iy),c
+    ld (iy+1),0FFh
 		jr	shift_ret
 
 shift_right:
+    scf
 		rr		(iy+1)
 		rr		(iy)
 		lea 	iy,iy+2
@@ -69,14 +71,14 @@ shift_right:
 shift_down:
 		lea		iy,iy+14
 		ld		c,(iy+1)
-		inc		b
 $$:		ld		a,(iy-2)
 		ld		(iy),a
 		ld		a,(iy-1)
 		ld		(iy+1),a
 		lea		iy,iy-2
 		djnz	$B
-		ld		(iy+2),c
+		ld		(iy),c
+    ld (iy+1),0FFh
 		
 shift_ret:
 		pop		iy

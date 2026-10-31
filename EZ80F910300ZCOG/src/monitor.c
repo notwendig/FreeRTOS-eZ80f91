@@ -128,7 +128,6 @@ static unsigned alarms = 0;
 
 static Socket_t xSocketTrace = (Socket_t)-1;
 static struct freertos_sockaddr xClient;
-static socklen_t xClientAddressLength = 0;
 static int clientok;
 
 static int sockPrintf(const char *fmt, ...)
@@ -349,45 +348,61 @@ xSocket_t xSocket = FREERTOS_INVALID_SOCKET;
 	return xSocket;
 }
 
-void sysinfo(void* param)
+static void monitorStart(void)
 {
-	BaseType_t iosize;
-	char cLocalBuffer;
-
-	while(FreeRTOS_IsNetworkUp() == pdFALSE)
-		vTaskDelay(3000);
-
-	/* Create the socket. */
-	
-	xSocketTrace = prvOpenUDPServerSocket(MONITOR_PORT);
-	//FreeRTOS_socket( FREERTOS_AF_INET, FREERTOS_SOCK_DGRAM, FREERTOS_IPPROTO_UDP );
-	configASSERT( xSocketTrace != FREERTOS_INVALID_SOCKET );
-	do{
-		/* Wait for incoming data on the opened socket. */
-		xClientAddressLength= sizeof(xClient);
-		iosize = FreeRTOS_recvfrom( xSocketTrace, ( void * ) &cLocalBuffer, 1, 0, &xClient, &xClientAddressLength );
-		if(iosize <= 0)
-			continue;
-
-		sockPrintf("\n\n\n\n\n\n\n\n\n\n");
-		sockPrintf(ANSI_NORM ANSI_CLRS ANSI_SATT(0,34,47) ANSI_GXY(1,1)  " FreeRTOS " tskKERNEL_VERSION_NUMBER " Demo V" VERSION " on ZiLOG\'s " DEVKIT " Kit / " ZIDE ANSI_DEOL);
-		sockPrintf(                    ANSI_SATT(0,34,47) ANSI_GXY(1,2)  " Autor " AUTOR " www.NadiSoft.de <" AUTORMAIL ">" ANSI_DEOL ANSI_NORM);
-
-		setAlarm(rtc_alarm,1,0, 0, 0, 30);
-		clientok = 1;
-		while(clientok)
-		{
-			sys_netinfo();
-			vTaskDelay(200);
-			sys_rtcinfo();
-			vTaskDelay(200);
-			sys_heapinfo();
-			vTaskDelay(200);
-			sys_buttoninfo();
-			vTaskDelay(200);
-		}
-	}while(1);
+    sockPrintf("\n\n\n\n\n\n\n\n\n\n");
+    sockPrintf(ANSI_NORM ANSI_CLRS ANSI_SATT(0,34,47) ANSI_GXY(1,1) " FreeRTOS " tskKERNEL_VERSION_NUMBER " Demo V" VERSION " on ZiLOG's " DEVKIT " Kit / " ZIDE ANSI_DEOL);
+    sockPrintf(ANSI_SATT(0,34,47) ANSI_GXY(1,2) " Autor " AUTOR " www.NadiSoft.de <" AUTORMAIL ">" ANSI_DEOL ANSI_NORM);
+    setAlarm(rtc_alarm,1,0, 0, 0, 30);
+    clientok = 1;
 }
 
+static void monitorReceive(void)
+{
+    struct freertos_sockaddr nextClient;
+    socklen_t addressLength = sizeof(nextClient);
+    char input;
+    BaseType_t received;
+
+    /* UDP has no disconnect notification. Every new datagram selects the
+     * current viewer, including a new nc process with a different source port.
+     * Do not overwrite the active address when the timed receive expires. */
+    received = FreeRTOS_recvfrom(xSocketTrace, &input, 1, 0,
+                                 &nextClient, &addressLength);
+    if(received > 0)
+    {
+        xClient = nextClient;
+        monitorStart();
+    }
+}
+
+void sysinfo(void* param)
+{
+    static const TickType_t receiveTimeOut = 200;
+
+    while(FreeRTOS_IsNetworkUp() == pdFALSE)
+        vTaskDelay(3000);
+
+    xSocketTrace = prvOpenUDPServerSocket(MONITOR_PORT);
+    configASSERT(xSocketTrace != FREERTOS_INVALID_SOCKET);
+    FreeRTOS_setsockopt(xSocketTrace, 0, FREERTOS_SO_RCVTIMEO,
+                       &receiveTimeOut, sizeof(receiveTimeOut));
+    for(;;)
+    {
+        if(!clientok)
+        {
+            monitorReceive();
+            continue;
+        }
+        sys_netinfo();
+        monitorReceive();
+        sys_rtcinfo();
+        monitorReceive();
+        sys_heapinfo();
+        monitorReceive();
+        sys_buttoninfo();
+        monitorReceive();
+    }
+}
 
 /* ############################################################################# */

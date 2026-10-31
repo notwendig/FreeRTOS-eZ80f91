@@ -106,8 +106,12 @@ extern void shiftDisplay();
  * Pre-processor Definitions
  ****************************************************************************/
 /* LED anode and cathode memory maped I/O pointers */
+#ifndef LEDMATRIX_ANODE
 #define LEDMATRIX_ANODE   (*(volatile unsigned char*)0x800000)  //Anode
+#endif
+#ifndef LEDMATRIX_CATHODE
 #define LEDMATRIX_CATHODE (*(volatile unsigned char*)0x800001)  //Cathode
+#endif
 
 
 /****************************************************************************
@@ -122,9 +126,13 @@ static TaskHandle_t LEDTaskHandle;
 unsigned ledticks = (configCPU_CLOCK_HZ / 16 / configLED5x7TICK_RATE_HZ);
 	
 /* The current selected glyph 7 rows*/
-static volatile CHAR *currglyph;
+static const CHAR *currglyph;
 
-static UINT8  frames;	// display refresch delay 
+/* Only the animation task writes dply. The ISR never reads a shift in flight. */
+static volatile uint8_t displayFront[7], displayPending[7], displayScan[7];
+static volatile uint8_t displayStatic[7]; /* active-high 5-bit overlay */
+static volatile uint8_t displayReady;
+static uint8_t displayScans;
 static UINT16 chardly;	// delay between letters
 static uint8_t shift_width = 6;
 /* Display character queue	*/
@@ -247,6 +255,30 @@ static const CHAR cmatrix[96][7] = {			 // hex- ascii
  * Private Functions
  ****************************************************************************/
 
+/* Publish only a complete shift result. If the prior image is still pending,
+ * wait for the ISR to consume it instead of dropping intermediate positions. */
+static void publishDisplay(void)
+{
+    uint8_t image[7];
+    uint8_t i;
+    for(i=0; i<7; i++)
+        image[i] = (uint8_t)dply[i];
+    for(;;)
+    {
+        portENTER_CRITICAL();
+        if(!displayReady)
+        {
+            for(i=0; i<7; i++)
+                displayPending[i] = image[i];
+            displayReady = 1;
+            portEXIT_CRITICAL();
+            return;
+        }
+        portEXIT_CRITICAL();
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    }
+}
+
 static void setDisplay(const CHAR* src)
 {
 	int i;
@@ -295,8 +327,27 @@ void /*nested_interrupt*/ LED5x7Tick( )
 {
 	uint8_t iir = TMR1_IIR;
 
-	LEDMATRIX_CATHODE =dply[row];		// set row image
-	LEDMATRIX_ANODE   = col[row]  ;		// enable row
+    /* Blank the preceding row before changing cathodes: no row-switch ghost. */
+    LEDMATRIX_ANODE = 0x80;
+    if(row == 0)
+    {
+        uint8_t i;
+        if(displayScans < LED5x7_FRAME_SCANS)
+            displayScans++;
+        if(displayReady && displayScans >= LED5x7_FRAME_SCANS)
+        {
+            for(i=0; i<7; i++)
+                displayFront[i] = displayPending[i];
+            displayReady = 0;
+            displayScans = 0;
+        }
+        /* Latch the entire logical OR once for this seven-row scan.
+         * Hardware cathodes are active-low, overlay bits are active-high. */
+        for(i=0; i<7; i++)
+            displayScan[i] = displayFront[i] & (uint8_t)~displayStatic[i];
+    }
+    LEDMATRIX_CATHODE = displayScan[row];
+    LEDMATRIX_ANODE = col[row];
 	if(++row > 6)
 	{
 		row = 0;
@@ -319,7 +370,8 @@ static void LED5x7Task( void *arg)
 		for(i = 0; i < shift_width; i++)
 		{
 			ulTaskNotifyTake( pdFALSE, portMAX_DELAY );
-			shiftDisplay();		// shift in the new char image
+			shiftDisplay();		// shift all rows before publishing
+            publishDisplay();
 			vTaskDelay(shiftdly);	// delay between chars
 		}
 		vTaskDelay(chardly);	// delay between chars
@@ -373,11 +425,22 @@ void initLED5x7()
 	uint8_t tl = ledticks;
 
 	currglyph  	= cmatrix[95];
-	frames		= LED5x7_FRAMES;	// display refresch delay 
 	chardly		= LED5x7_CDELAY;	// LED5x7_FRAMES deleys between letters
 	dir			= SHIFT_NONE;
-	memset(dply,0xFF,sizeof(dply));
-	
+    {
+        uint8_t i;
+        for(i=0; i<7; i++)
+        {
+            displayFront[i] = displayPending[i] = displayScan[i] = 0xFF;
+            displayStatic[i] = 0;
+        }
+        displayReady = displayScans = row = 0;
+    }
+    {
+        uint8_t i;
+        for(i=0; i<8; i++) dply[i] = 0xFFFF;
+    }
+
 	xLED5x7Queue= xQueueCreate( LED5x7_QUEUES, sizeof( CHAR));
 	xTaskCreate( LED5x7Task, "LED5x7", configMINIMAL_STACK_SIZE, NULL, LED5x7_PRIO, &LEDTaskHandle);
 
@@ -393,10 +456,29 @@ void initLED5x7()
 	TMR1_IER = 1;
 }
 
+/* x=0..4 left-to-right, y=0..6 top-to-bottom. These affect only the
+ * persistent overlay; the scroll matrix remains unchanged. Task-context API. */
+void LED5x7_set(uint8_t x, uint8_t y)
+{
+    if(x >= 5 || y >= 7) return;
+    portENTER_CRITICAL();
+    displayStatic[y] |= (uint8_t)(1U << (4-x));
+    portEXIT_CRITICAL();
+}
+
+void LED5x7_clr(uint8_t x, uint8_t y)
+{
+    if(x >= 5 || y >= 7) return;
+    portENTER_CRITICAL();
+    displayStatic[y] &= (uint8_t)~(1U << (4-x));
+    portEXIT_CRITICAL();
+}
+
 /* set shift direction */
 dir_e LED5x7_setDir(dir_e to)
 {
 	dir_e old = dir;
+    if((unsigned)to > SHIFT_DOWN) return old;
 	dir = to;
 	shift_width = width[to];
 	return old;

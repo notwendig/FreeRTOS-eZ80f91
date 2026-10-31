@@ -47,7 +47,7 @@ index 823ca87..ce29e00 100644
  
                  /* It might be that the ARP has to go to the gateway. */
 diff --git a/source/FreeRTOS_DHCP.c b/source/FreeRTOS_DHCP.c
-index 77f6ae7..772c8b0 100644
+index 77f6ae7..a144f51 100644
 --- a/source/FreeRTOS_DHCP.c
 +++ b/source/FreeRTOS_DHCP.c
 @@ -516,7 +516,7 @@
@@ -70,7 +70,21 @@ index 77f6ae7..772c8b0 100644
                                             pxEndPoint->xMACAddress.ucBytes[ 4 ],
                                             pxEndPoint->xMACAddress.ucBytes[ 5 ] ) );
                          xReturn = pdPASS;
-@@ -1558,7 +1558,7 @@
+@@ -1469,7 +1469,12 @@
+                  * it easier to lookup a device in a router's list of DHCP clients. */
+
+                 /* Point to where the OPTION_END was stored to add data. */
+-                uint8_t * pucPtr = &( pucUDPPayloadBuffer[ dhcpFIRST_OPTION_BYTE_OFFSET + ( *pxOptionsArraySize - 1U ) ] );
++                /* Keep these steps separate: ZDS 5.3.5 miscompiles the nested
++                 * unsigned addition/subtraction and writes before the options. */
++                uint8_t * pucPtr = pucUDPPayloadBuffer;
++                pucPtr += dhcpFIRST_OPTION_BYTE_OFFSET;
++                pucPtr += *pxOptionsArraySize;
++                pucPtr--;
+                 pucPtr[ 0U ] = dhcpIPv4_DNS_HOSTNAME_OPTIONS_CODE;
+                 pucPtr[ 1U ] = ( uint8_t ) uxNameLength;
+
+@@ -1558,7 +1563,7 @@
              pvCopyDest = &pucUDPPayloadBuffer[ dhcpFIRST_OPTION_BYTE_OFFSET + dhcpDHCP_SERVER_IP_ADDRESS_OFFSET ];
              ( void ) memcpy( pvCopyDest, pvCopySource, sizeof( EP_DHCPData.ulDHCPServerAddress ) );
  

@@ -101,6 +101,11 @@ typedef enum {
 	SHIFT_DOWN
 } dir_e ;
 	
+#define LED5x7_FRAME_SCANS 7U
+
+/* Persistent overlay: (0,0) is top-left; out-of-range coordinates are ignored. */
+void LED5x7_set(uint8_t x, uint8_t y);
+void LED5x7_clr(uint8_t x, uint8_t y);
 void 		initLED5x7();
 BaseType_t 	LED5x7_putchar(CHAR c, TickType_t tout);
 BaseType_t 	LED5x7_puts(const CHAR *s, TickType_t tout);

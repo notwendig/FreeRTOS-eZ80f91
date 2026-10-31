@@ -81,8 +81,8 @@ sources. Both configurations provide all include paths, thread and CP/M definiti
 `Release/EZ80F910300ZCOG.hex`/`.lod`/`.map`:
 
 - Internal flash: `0x000000–0x03FFFF` for program code and ordinary constants.
-- CP/M disks: raw writable CS3 RAM image at `0x200000–0xAFFFFF`,
-  containing A/B/C/D/I/J consecutively. No embedded compressed disk image.
+- CP/M disks: separate writable A/B/C/D/I/J images behind a WD2797A
+  controller. Sector data moves through I/O ports; no CS3 disk RAM is used.
 - Application data, stack and first heap: external RAM `0xC00000–0xC3FFFF`.
   CP/M reserves `0xB80000–0xB8FFFF`; the additional heap remains at
   `0xB90000–0xBFFFFF`.
@@ -101,14 +101,40 @@ python3 tools/cpm/build_system.py
 python3 tools/cpm/build_disks.py
 ```
 
-Use `-M ez80f91-minimal,cs3-file=/absolute/path/to/cs3-abcdij.img` with
-`cs3=ram` (the default). QEMU saves raw changes on orderly exit. `start.sh`
-creates a separate writable `ez80f91_cs3.<debugport>` from the bundled image
-on its first launch. Existing writable images are retained; to adopt a changed
-BIOS, use a newly generated image or replace its system tracks while stopped.
-Early board startup narrows CS2 decoding to B80000–BFFFFF before heap
-initialization; the CP/M task enables CS3 at 200000–AFFFFF. CP/M RAM and both
-application heap regions remain outside the disk window.
+Start from the parent repository with:
+
+```sh
+qemuez80f91 --kit --run --wd2797a 0x1000 --dev '/path/to/disks'
+```
+
+The directory contains raw A.img/B.img/etc. (plain A/B names also work).
+The first four controller ports are Status/Command, Track, Sector and Data.
+Board extensions provide drive selection, DRQ/INTRQ/READY and the high track
+byte for I/J. Firmware discovers the configured base through I/O FF00–FF07,
+so changing the base does not require rebuilding. QEMU saves modified files
+on orderly exit. Without --dev, the starter preserves individual per-debug-port
+images and migrates the prior combined image on first use.
+
+CS3 is disabled; existing CS1/CS2, application RAM and LED decoding remain
+unchanged. CP/M boots by reading A: track 0, sector 1 into its existing RAM.
+There is no embedded disk, decompression, large disk allocation or memory bank.
+Controller details and limitations are documented in the parent repository's
+`docs/wd2797a.md`.
+
+The DHCP hostname hook reads QEMU's read-only `HOST` descriptor at external
+I/O FF08–FF4B. The default is `ez80<debugport>`, or use launcher option
+`--hostname <name>`. Rebuild and load firmware once after this update;
+subsequent hostname changes require only a QEMU restart. On physical hardware,
+without that descriptor, the compiled-in `ez80` hostname remains the fallback.
+The TCP/IP compatibility patch also splits the DHCP hostname option pointer
+calculation into separate steps: ZDS 5.3.5 otherwise miscompiles the nested
+unsigned addition/subtraction and writes the option outside the options area.
+
+The SysInfo monitor (`nc -u ez804040 4060`, then Enter) continues receiving
+UDP datagrams between display updates. A new sender IP/port takes over the
+display and receives a fresh banner, so reopening netcat works without a guest
+restart. The monitor uses the timed receive in place of its previous 200-tick
+delays and retains its active address when no datagram arrives.
 
 Close the ZDS project **before** pulling a project configuration update, then
 reopen it and run **Rebuild All**. An already-open IDE can save its cached old
