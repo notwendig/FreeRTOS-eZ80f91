@@ -10,9 +10,6 @@ DEPENDENCIES = (
      ('kernel-V11.3.2.patch',)),
     ('network', 'https://github.com/FreeRTOS/FreeRTOS-Plus-TCP.git', 'V4.4.2',
      ('network-V4.4.2-zds.patch',)),
-    ('uzlib', 'https://github.com/pfalcon/uzlib.git',
-     '6d60d651a4499a64f2e5b21b4cc08d98cb84b5c1',
-     ('uzlib-6d60d65-zds.patch',)),
 )
 
 

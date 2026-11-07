@@ -21,7 +21,7 @@ vpath %.ASM $(ASDIR)
 vpath %.obj $(ASDIR)
 vpath %.INC $(ASDIR)
 
-all: CPM22_A.c relist test
+all: A.DSK relist test
 
 # Compile Z80-Assembler to Z80-Binary
 %.obj:%.ASM CPM.INC Makefile CPM22.linkcmd
@@ -39,24 +39,11 @@ A.DSK:CPM.SYS #$(CPMFILES)
 	@cpmcp -f ibm-3740 $@ $(CPMFILES) 0:
 	@md5sum $@ > $@.md5
 
-A.UZ:A.DSK
-	@../uzlib/examples/tgzip/tgzip $< $@
-	#@cp -f $< $@
-	@md5sum $@ > $@.md5
-
-CPM22_A.c:A.UZ
-	@srec_cat $< -binary -output $@ -C-Array cpm22img
-	@sed -i '1i#ifndef CPM22_IMAGE_PLACEMENT\n#define CPM22_IMAGE_PLACEMENT\n#endif' $@
-	@sed -i 's/cpm22img\[\] =/cpm22img[] CPM22_IMAGE_PLACEMENT =/' $@
-
-
 relist:$(ASRCS)
 	@for f in $^; do $(AS) -relist:CPM22.map $(AFLAGS) $$f;done
 
-# Very basic test for (de)-compressor
-test:CPM22_A.c
-	@md5sum -c A.DSK.md5
-	@../uzlib/examples/tgunzip/tgunzip A.UZ A.DSK
+# Verify the raw CP/M disk image
+test:A.DSK
 	@md5sum -c A.DSK.md5
 
 clean:

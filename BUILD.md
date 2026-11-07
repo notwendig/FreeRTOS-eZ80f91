@@ -6,12 +6,10 @@
 | --- | --- | --- |
 | FreeRTOS-Kernel | V11.3.2, `8a59a4b19bf72977819feddef87d41163ced7004` | `kernel-V11.3.2.patch` |
 | FreeRTOS-Plus-TCP | V4.4.2, `b86ad086e9870099bb0ac18a75dcb7f6dd508cc7` | `network-V4.4.2-zds.patch` |
-| uzlib | master, `6d60d651a4499a64f2e5b21b4cc08d98cb84b5c1` | `uzlib-6d60d65-zds.patch` |
 
 Patches are under `patches/`. Gitlinks point to public upstream revisions;
 ZDS changes are distributed explicitly as patches, without requiring extra
-forks or unpublished library commits. uzlib has no release tag newer than
-v2.9.5; the pinned master commit is dated 15 November 2021.
+forks or unpublished library commits.
 
 ## Automatic setup
 
@@ -29,7 +27,7 @@ Back up edits before upgrading an existing dirty library checkout.
 Normal submodule initialization is also possible, but does not replace patch setup:
 
 ```sh
-git submodule update --init -- kernel network uzlib
+git submodule update --init -- kernel network
 python3 setup-dependencies.py
 ```
 
@@ -40,7 +38,7 @@ is removed; active CP/M 2.2 integration is under `CPM/`.
 
 ## Fresh-clone build errors
 
-Missing `kernel/include/FreeRTOS.h`, `uzlib/src/adler32.c` or
+Missing `kernel/include/FreeRTOS.h` or
 `network/source/portable/BufferManagement/BufferAllocation_2.c` means dependency
 setup is incomplete. From this repository, run `python3 setup-dependencies.py`,
 then select **Rebuild All** in ZDS. From the enclosing qemuez80f91 workspace,
@@ -60,10 +58,6 @@ git -C kernel apply ../patches/kernel-V11.3.2.patch
 
 git clone --branch V4.4.2 https://github.com/FreeRTOS/FreeRTOS-Plus-TCP.git network
 git -C network apply ../patches/network-V4.4.2-zds.patch
-
-git clone https://github.com/pfalcon/uzlib.git uzlib
-git -C uzlib checkout --detach 6d60d651a4499a64f2e5b21b4cc08d98cb84b5c1
-git -C uzlib apply ../patches/uzlib-6d60d65-zds.patch
 ```
 
 Do not blindly apply patches repeatedly or discard unrelated edits.
@@ -178,13 +172,13 @@ Do not repair generated `.mak` files: ZDS replaces them on the next build.
 Missing headers only in Release indicate outdated configuration/include paths,
 rather than missing libraries when Debug already builds. The Release settings
 must include `EZ80F910300ZCOG\inc`, `kernel\include`,
-`network\source\include`, `uzlib\src` and the installed RZK headers.
+`network\source\include` and the installed RZK headers.
 
  The default installation is `C:\Zilog\ZDSII_eZ80Acclaim!_5.3.5`.
 For another installation, update the additional include path
 `ZTP2.5.1\RZK\Inc`, which supplies `_ez80.h`, `AMD79C874_phy.h` and I/O types.
 
-Always rebuild fully after changing uzlib headers: generated make dependencies
+Always rebuild fully after changing library headers: generated make dependencies
 may be incomplete. Outputs reside in `EZ80F910300ZCOG/Debug/` and `bin/`.
 HEX, LOD, workspace and generated map files are ignored. Live tests must use
 the map matching the firmware actually loaded.
@@ -248,17 +242,13 @@ IPv4 diagnostics use `%lxip` and `unsigned long`. Upstream `%xip` with an
 `255.168.77.26` instead of `192.168.77.26`. The network test checks complete
 DHCP/ARP addresses as well as traffic.
 
-## uzlib and CP/M
+## CP/M drive storage
 
-The old large compressor refactoring is already present upstream. The small
-current patch retains C90 declaration order, ordinary static functions instead
-of unsupported inline functions, 32-bit CRC/trailers and output-bound checks.
-The wrapper treats `TINF_DONE` as success and validates CRC even when output
-exactly fills its destination. It does not start CP/M with an invalid disk pointer.
-
-CP/M uses reserved `CB 30`–`CB 35` BIOS traps. The emulator must handle them
-through the F91 ADL supervisor TRAP and `RET.L` back to Z80 mode. Merely aborting
-on every illegal opcode does not support this port.
+CP/M uses raw writable disk images or Unix directory drives through QEMU's
+native I/O ports. No decompression library is required. The legacy
+`CPM/CPM22_A.c` compressed fixture is retained only as input to the companion
+emulator's Python disk-image builder; it is not compiled into the firmware.
+`CPM/Makefile` builds and verifies an uncompressed `A.DSK`.
 
 Other application corrections include EMAC TLBP/BP/RHBP/RRP setup, signed socket
 errors, closing clients before accept and `xTimerStartFromISR` for debounce timers.
@@ -268,13 +258,11 @@ errors, closing clients before accept and `xTimerStartFromISR` for debounce time
 From the companion emulator workspace:
 
 ```sh
-python3 tests/test_freertos_unzip.py
 python3 tests/test_freertos_buttons.py /tmp/ez80f91-1000/4040.qmp
 python3 tests/test_freertos_cpm.py <guest-ip>
 ```
 
-The first is a host test of actual wrapper/uzlib sources. The others require
-running firmware and its matching map/IP. See the
+These tests require running firmware and its matching map/IP. See the
 [test catalog](https://github.com/notwendig/qemuez80f91/blob/main/docs/testing.md).
 
 For a complete freshly built board image:

@@ -2,7 +2,7 @@
 
 FreeRTOS port and demonstration application for the **Zilog eZ80F91** and
 EZ80F910300ZCOG development kit. It combines preemptive tasks, UART0,
-Ethernet/DHCP, a CP/M 2.2 RAM disk, buttons and a scrolling 5×7 LED matrix.
+Ethernet/DHCP, CP/M 2.2 drive storage, buttons and a scrolling 5×7 LED matrix.
 
 ## Requirements
 
@@ -21,24 +21,23 @@ python3 setup-dependencies.py
 ```
 
 Setup uses public upstream revisions plus supplied ZDS/eZ80 patches:
-FreeRTOS-Kernel **V11.3.2**, Plus-TCP **V4.4.2**, uzlib **6d60d65**.
+FreeRTOS-Kernel **V11.3.2** and Plus-TCP **V4.4.2**.
 No private library fork or unpublished commit is required. Library working
 trees intentionally contain applied changes; this project tracks upstream
 revisions and patches.
 
 Do not skip `setup-dependencies.py`: a fresh clone does not contain the
 nested library sources. If ZDS reports missing `FreeRTOS.h` or `No rule to make
-target` for `kernel`, `network` or `uzlib`, run this setup command first.
+target` for `kernel` or `network`, run this setup command first.
 When using the qemuez80f91 workspace, `python3 scripts/setup-dependencies.py`
 from its root initializes both firmware projects and their dependencies.
 
 Open `EZ80F910300ZCOG.zdsproj`, select **Debug**, then **Rebuild All**.
-The main project already compiles kernel, networking and uzlib; separate library
-builds are unnecessary. **Release** places program code in internal flash and
-the compressed CP/M disk image in external AMD flash at `0x100000`. It uses
-`eZ80F91_99C0879-AMD_Flash`; Debug retains its RAM target. Close the project
-before updating its settings, then reopen it and rebuild. See
-[Build instructions](BUILD.md#zds-ii-535) for the memory layout and dependencies.
+The main project already compiles kernel and networking; separate library
+builds are unnecessary. Both Debug and Release use `eZ80F91_99C0942_Flash`,
+with program code in internal/external flash. CP/M uses raw images or directory
+drives through emulator I/O ports. Close the project before updating its settings,
+then reopen it and rebuild. See [Build instructions](BUILD.md#build-and-debug-with-zds-ii-535).
 
 ## Start and services
 
@@ -76,8 +75,7 @@ nc -u <guest-ip> 4060
 nc <guest-ip> 4050
 ```
 
-Initial disk decompression may take minutes in emulation. `#` shows progress,
-followed by loader messages and `a>`.
+CP/M starts from the selected raw image or directory drive and displays `a>`.
 
 ## Layout
 
@@ -85,7 +83,7 @@ followed by loader messages and `a>`.
 | --- | --- |
 | `EZ80F910300ZCOG/src`, `inc` | Application, startup, drivers and configuration |
 | `EZ80F910300ZCOG.zdsproj` | Main ZDS project |
-| `kernel`, `network`, `uzlib` | Public library revisions with applied patches |
+| `kernel`, `network` | Public library revisions with applied patches |
 | `patches/` | Tracked compatibility changes |
 | `setup-dependencies.py` | Repeatable setup that refuses unrelated dirty version changes |
 | `CPM/` | CP/M disk and BIOS/TRAP integration |
@@ -95,13 +93,12 @@ followed by loader messages and `a>`.
 ## Fixes and tests
 
 The EMAC driver initializes ring boundaries/RRP and registers a TCP/IP 4 interface.
-Button debounce uses the ISR timer API. Disk decompression validates bounds,
-CRC and full-width trailers; clients are closed before the next accept.
+Button debounce uses the ISR timer API. Clients are closed before the next accept.
 The demonstration scrolls to the right. IPv4 logs use 32-bit arguments rather
 than truncating addresses to eZ80's 24-bit `unsigned int`.
 
 The emulator workspace provides startup, switching, blocking, rollover,
-decompression, buttons, CP/M and isolated DHCP/ARP/ICMP/TCP tests. These do not
+buttons, CP/M and isolated DHCP/ARP/ICMP/TCP tests. These do not
 replace physical-hardware validation. The functional PHY may show misleading
 speed/duplex until vendor registers are completed; it does not measure host-link speed.
 

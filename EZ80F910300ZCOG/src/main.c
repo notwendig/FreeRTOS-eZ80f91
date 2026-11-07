@@ -21,7 +21,6 @@
 #include "time.h"
 
 #include "_ez80.h"
-//#include "CPM22_A.h"
 
 #ifndef  _MULTI_THREAD
 #error _MULTI_THREAD must by defined
@@ -124,23 +123,6 @@ int main(int argc, void *argv[])
 	
 	TTYInit();
 	puts("\033[2J\x1b[9;0H eZ80 tty");
-#if 0
-{
-	size_t slen = cpm22img_length-4;
-	size_t dlen = *(uint32_t*)((size_t) cpm22img + slen);
-	uint8_t*  ramdisk = pvPortMalloc(dlen); 
-	if(ramdisk)
-	{
-		int uz;
-		memset(ramdisk,0xAA,dlen);
-		uz = uzip(ramdisk,dlen,cpm22img,slen,NULL,0);
-		if(TINF_DONE == uz)
-			puts("OK");
-		else
-			puts("ERR");
-	}							
-}
-#endif
 	initRTC();
 	initButtons();
 	initLED5x7();

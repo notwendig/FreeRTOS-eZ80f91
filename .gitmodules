@@ -6,7 +6,3 @@
 	path = network
 	url = https://github.com/FreeRTOS/FreeRTOS-Plus-TCP.git
 	ignore = dirty
-[submodule "uzlib"]
-	path = uzlib
-	url = https://github.com/pfalcon/uzlib.git
-	ignore = dirty
