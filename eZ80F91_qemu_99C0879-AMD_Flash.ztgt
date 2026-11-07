@@ -21,7 +21,7 @@
       <externalAddress>100000</externalAddress>
       <externalAutoSelect>true</externalAutoSelect>
       <externalRamLower>B80000</externalRamLower>
-      <externalRamUpper>C7FFFF</externalRamUpper>
+      <externalRamUpper>FFFFFF</externalRamUpper>
       <manufacturer>AMD</manufacturer>
       <units>1</units>
       <usingExternal>true</usingExternal>
@@ -39,7 +39,7 @@
             <busMode>0</busMode>
             <controlRegister>28</controlRegister>
             <lower>c0</lower>
-            <upper>c7</upper>
+            <upper>CF</upper>
          </CS1>
          <CS2>
             <busMode>81</busMode>
@@ -50,8 +50,8 @@
          <CS3>
             <busMode>0</busMode>
             <controlRegister>A8</controlRegister>
-            <lower>60</lower>
-            <upper>6F</upper>
+            <lower>D0</lower>
+            <upper>FF</upper>
          </CS3>
       </ChipSelects>
       <Internal>

@@ -877,22 +877,22 @@ inkey:
 	;Tastatur einlesen, ist kein
 	;Zeichen da = Akku A 00
 	ld	a,00h
-	EXBIOS CONIO, PORTOUT, CONSTA	;out	(sioas),a
-	EXBIOS CONIO, PORTINP, CONSTA ;in	a,(sioas)
+	OUT (HCONSTA),A	;out	(sioas),a
+	IN A,(HCONSTA) ;in	a,(sioas)
 	and	00000001b
 	ret	z
-	EXBIOS CONIO, PORTINP, CONDAT	;in	a,(sioad)
+	IN A,(HCONDAT)	;in	a,(sioad)
 	ret
 
 inch:
 	;auf Zeichen von sio a
 	;warten -> Akku A
 	ld      a,00h
-	EXBIOS CONIO, PORTOUT, CONSTA ;out     (sioas),a
-	EXBIOS CONIO, PORTINP, CONSTA ;in      a,(sioas)
+	OUT (HCONSTA),A ;out     (sioas),a
+	IN A,(HCONSTA) ;in      a,(sioas)
 	and     00000001b
 	jr      z,inch
-	EXBIOS CONIO, PORTINP, CONDAT	;in      a,(sioad)
+	IN A,(HCONDAT)	;in      a,(sioad)
 	ret
 
 inhex:
@@ -971,12 +971,12 @@ outch:
 	push	af
 outch1:
 	ld	a,00h
-	EXBIOS CONIO, PORTOUT, CONSTA ;out	(sioas),a
-	EXBIOS CONIO, PORTINP, CONSTA ;in	a,(sioas)
+	OUT (HCONSTA),A ;out	(sioas),a
+	IN A,(HCONSTA) ;in	a,(sioas)
 	and	00000100b
 	jr	z,outch1
 	pop	af
-	EXBIOS CONIO, PORTOUT, CONDAT	 ;out	(sioad),a
+	OUT (HCONDAT),A	 ;out	(sioad),a
 	ret
 
 outhx:
@@ -1095,7 +1095,7 @@ init_ctc_sio:
 	ld	hl,sioini
 ini1:
 	ld	a,(hl)
-	EXBIOS CONIO, PORTOUT, CONSTA ;out	(sioas),a
+	OUT (HCONSTA),A ;out	(sioas),a
 	inc	hl
 	djnz	ini1
 	ret
@@ -1133,11 +1133,11 @@ down2:
 	;UP Byte lesen
 leseb:
 	ld	a,00h
-	EXBIOS CONIO, PORTOUT, CONSTA ;out	(sioas),a
-	EXBIOS CONIO, PORTINP, CONSTA ;in	a,(sioas)
+	OUT (HCONSTA),A ;out	(sioas),a
+	IN A,(HCONSTA) ;in	a,(sioas)
 	and	01h
 	jr	z,leseb
-	EXBIOS CONIO, PORTINP, CONDAT	;in	a,(sioad)
+	IN A,(HCONDAT)	;in	a,(sioad)
 	ret
 
 	;UP Doppelbyte lesen

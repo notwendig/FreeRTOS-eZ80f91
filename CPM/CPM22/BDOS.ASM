@@ -17,7 +17,10 @@ PATTRN2: SERIALNO	;(* serial number bytes *).
 ;*
 ;**************************************************************
 ;
-FBASE:	JP	FBASE1
+    XREF HOSTDISPATCH
+    XDEF FBASE1
+FBASE:  JP HOSTDISPATCH
+;
 ;
 ;   Bdos error table.
 ;

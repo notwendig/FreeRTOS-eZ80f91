@@ -71,6 +71,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
 
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
@@ -90,14 +92,14 @@ commands. */
 static int8_t *    	curraddr= 0;
 static size_t		counter = 0;
 	
-static char *skipws(const char *s)
+static char *skipws(char *s)
 {
 	while(*s && isspace(*s))
 		s++;
 	return s;
 }
 
-static int32_t getnum(const char **s)
+static int32_t getnum(char **s)
 {
 	int32_t res = 0;
 	int base = 10;
@@ -146,23 +148,24 @@ static int32_t getnum(const char **s)
 	return negative ? -res:res;
 }
 
-static char* getaddrrange(const char *s, char **addr, uint24_t *len)
+static char* getaddrrange(char *s, char **addr, uint24_t *len)
 {
-	char* tmp = s;
-	int32_t n = getnum(&tmp);
-	*len = 0;
-	
-	if(n >= 0 && n < 0x1000000)
-	{
-		*addr = (char*) n;
-		if(*tmp)
-		{
-			*len = getnum(&tmp);
-			if(*len < 0)
-				*len = -*len - n;
-		}
-	}
-	return tmp;
+    char *tmp = s;
+    int32_t start = getnum(&tmp);
+    int32_t count = 0;
+    *len = 0;
+    if(tmp == s || start < 0 || start >= 0x1000000L)
+        return tmp;
+    *addr = (char *)(uint24_t)start;
+    if(*tmp)
+    {
+        count = getnum(&tmp);
+        if(count < 0)
+            count = -count - start;
+        if(count > 0 && count <= 0x1000000L - start && count <= 0xffffffL)
+            *len = (uint24_t)count;
+    }
+    return tmp;
 }
 
 typedef enum 
@@ -185,7 +188,7 @@ static BaseType_t prvDumpCommand( char *pcWriteBuffer, size_t xWriteBufferLen, c
 	if(!counter)
 	{
 		BaseType_t length;
-		char *param = FreeRTOS_CLIGetParameter(pcCommandString, 1, &length);
+		char *param = (char *)FreeRTOS_CLIGetParameter(pcCommandString, 1, &length);
 
 		if(param && length==1)
 		{
@@ -193,7 +196,7 @@ static BaseType_t prvDumpCommand( char *pcWriteBuffer, size_t xWriteBufferLen, c
 			if(x == DBYTE || x == DWORD16 || x == DWORD24)
 			{
 				dumpfmt = (dumptfmt_t) x;
-				param =  FreeRTOS_CLIGetParameter(pcCommandString, 2, &length);
+				param =  (char *)FreeRTOS_CLIGetParameter(pcCommandString, 2, &length);
 			}
 		}
 		if(param)
@@ -256,7 +259,7 @@ static BaseType_t prvDumpCommand( char *pcWriteBuffer, size_t xWriteBufferLen, c
 					counter--;
 				break;
 				case DWORD16:snprintf(pcWriteBuffer+n, xWriteBufferLen-n," %04X", *(UINT16*)curraddr);
-					*pascii++ = isprint(*curraddr+1) ? *curraddr+1:'.'; 
+					*pascii++ = isprint(*(curraddr+1)) ? *(curraddr+1):'.';
 					*pascii++ = isprint(*curraddr) ? *curraddr:'.'; 
 					*pascii++ = '|';
 					curraddr +=2;
@@ -266,8 +269,8 @@ static BaseType_t prvDumpCommand( char *pcWriteBuffer, size_t xWriteBufferLen, c
 						counter = 0;
 				break;
 				case DWORD24:snprintf(pcWriteBuffer+n, xWriteBufferLen-n," %06X", *(UINT24*)curraddr); 
-					*pascii++ = isprint(*curraddr+2) ? *curraddr+2:'.'; 
-					*pascii++ = isprint(*curraddr+1) ? *curraddr+1:'.'; 
+					*pascii++ = isprint(*(curraddr+2)) ? *(curraddr+2):'.';
+					*pascii++ = isprint(*(curraddr+1)) ? *(curraddr+1):'.';
 					*pascii++ = isprint(*curraddr) ? *curraddr:'.'; 
 					*pascii++ = '|';
 					curraddr +=3;
@@ -300,14 +303,14 @@ static BaseType_t pvrIHex16Command( char *pcWriteBuffer, size_t xWriteBufferLen,
 
 	if(!counter)
 	{
-		char *param =  FreeRTOS_CLIGetParameter(pcCommandString, 1, &i);
+		char *param =  (char *)FreeRTOS_CLIGetParameter(pcCommandString, 1, &i);
 		
 		if(param)
 		{
 			uint24_t len;
 			param = skipws(getaddrrange(param, &curraddr, &counter));
 			
-			snprintf(pcWriteBuffer, xWriteBufferLen, "# Intel hex from %p, %lu bytes.\n", curraddr, counter);
+			snprintf(pcWriteBuffer, xWriteBufferLen, "# Intel hex from %p, %lu bytes.\n", curraddr, (unsigned long)counter);
 			if(*param)
 				snprintf(pcWriteBuffer, xWriteBufferLen, "# Extra parameter ignored.\n");
 		} 
@@ -353,7 +356,7 @@ static BaseType_t pvrIHex16Command( char *pcWriteBuffer, size_t xWriteBufferLen,
 static BaseType_t prvDateCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
 {
 	BaseType_t length;
-	char *param = FreeRTOS_CLIGetParameter(pcCommandString, 1, &length);
+	char *param = (char *)FreeRTOS_CLIGetParameter(pcCommandString, 1, &length);
 	int8_t *error;
 	
 	if(param)
@@ -399,7 +402,7 @@ static BaseType_t prvDateCommand( char *pcWriteBuffer, size_t xWriteBufferLen, c
 static BaseType_t prvTimeCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
 {
 	BaseType_t length;
-	char *param = FreeRTOS_CLIGetParameter(pcCommandString, 1, &length);
+	char *param = (char *)FreeRTOS_CLIGetParameter(pcCommandString, 1, &length);
 	int8_t *error;
 	
 	if(param)
@@ -751,7 +754,7 @@ static BaseType_t lParameterNumber = 0;
 
 	static BaseType_t prvPingCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
 	{
-	char * pcParameter;
+	const char * pcParameter;
 	BaseType_t lParameterStringLength, xReturn;
 	uint32_t ulIPAddress, ulBytesToPing;
 	const uint32_t ulDefaultBytesToPing = 8UL;
@@ -767,7 +770,7 @@ static BaseType_t lParameterNumber = 0;
 		pcWriteBuffer[ 0 ] = 0x00;
 
 		/* Obtain the number of bytes to ping. */
-		pcParameter = ( char * ) FreeRTOS_CLIGetParameter
+		pcParameter = FreeRTOS_CLIGetParameter
 								(
 									pcCommandString,		/* The command string itself. */
 									2,						/* Return the second parameter. */
@@ -785,7 +788,7 @@ static BaseType_t lParameterNumber = 0;
 		}
 
 		/* Obtain the IP address string. */
-		pcParameter = ( char * ) FreeRTOS_CLIGetParameter
+		pcParameter = FreeRTOS_CLIGetParameter
 								(
 									pcCommandString,		/* The command string itself. */
 									1,						/* Return the first parameter. */
@@ -804,10 +807,15 @@ static BaseType_t lParameterNumber = 0;
 		else
 		{
 			/* Terminate the host name. */
-			pcParameter[ lParameterStringLength ] = 0x00;
-
 			/* Attempt to resolve host. */
-			ulIPAddress = FreeRTOS_gethostbyname( pcParameter );
+			if(lParameterStringLength >= sizeof(cBuffer))
+			{
+				snprintf(pcWriteBuffer, xWriteBufferLen, "Host name too long\r\n");
+				return pdFALSE;
+			}
+			memcpy(cBuffer, pcParameter, lParameterStringLength);
+			cBuffer[lParameterStringLength] = 0x00;
+			ulIPAddress = FreeRTOS_gethostbyname( cBuffer );
 		}
 
 		/* Convert IP address, which may have come from a DNS lookup, to string. */

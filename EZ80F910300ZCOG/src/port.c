@@ -9,13 +9,12 @@
 #include "portable.h"
 #include "task.h"
 #include "semphr.h"
-#include "uzlib.h"
 #include <eZ80F91.h>
 #include <stdlib.h>
 #include <Stdio.h>
 #include <Stdarg.h>
 
-/* Both profiles provide external RAM for the additional CP/M heap. */
+/* Both profiles provide external RAM for the additional interpreter heap. */
 
 //uint8_t ucHeap[configTOTAL_HEAP_SIZE] _At 0xB80000;
 HeapRegion_t xHeapRegions[] =
@@ -41,7 +40,7 @@ void portSetup()
 	#endif
 	#endif
 	/* heap_5 requires regions in increasing address order. Flash places the
-	 * application heap above the additional CP/M heap at 0xB90000. */
+	 * application heap above the additional interpreter heap at 0xB90000. */
 	if(xHeapRegions[1].xSizeInBytes &&
 	   (size_t)xHeapRegions[0].pucStartAddress > (size_t)xHeapRegions[1].pucStartAddress)
 	{
@@ -51,8 +50,6 @@ void portSetup()
 	}
 	vPortDefineHeapRegions(xHeapRegions);
 	
-	uzlib_init();
- 
 }
 
 int tolower(int c);

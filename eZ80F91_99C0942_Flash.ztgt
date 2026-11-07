@@ -14,12 +14,12 @@
       <pc>0</pc>
       <splStackPtr>C80000</splStackPtr>
       <spsStackPtr>FFFF</spsStackPtr>
-      <useAdlMode>false</useAdlMode>
+      <useAdlMode>true</useAdlMode>
    </ControlReg>
    <ExtFlash>
-      <device>Am29LV160BB S29AL016 Byte</device>
-      <externalAddress>600000</externalAddress>
-      <externalAutoSelect>true</externalAutoSelect>
+      <device>Am29LV008BB</device>
+      <externalAddress>040000</externalAddress>
+      <externalAutoSelect>false</externalAutoSelect>
       <externalRamLower>B80000</externalRamLower>
       <externalRamUpper>C7FFFF</externalRamUpper>
       <manufacturer>AMD</manufacturer>
@@ -32,8 +32,8 @@
          <CS0>
             <busMode>0</busMode>
             <controlRegister>A8</controlRegister>
-            <lower>10</lower>
-            <upper>1F</upper>
+            <lower>4</lower>
+            <upper>13</upper>
          </CS0>
          <CS1>
             <busMode>0</busMode>
@@ -44,19 +44,19 @@
          <CS2>
             <busMode>81</busMode>
             <controlRegister>28</controlRegister>
-            <lower>B0</lower>
+            <lower>80</lower>
             <upper>BF</upper>
          </CS2>
          <CS3>
             <busMode>0</busMode>
-            <controlRegister>a8</controlRegister>
-            <lower>60</lower>
-            <upper>7f</upper>
+            <controlRegister>0</controlRegister>
+            <lower>0</lower>
+            <upper>0</upper>
          </CS3>
       </ChipSelects>
       <Internal>
          <mapFlashToPage>0</mapFlashToPage>
-         <mapRamToPage>b7</mapRamToPage>
+         <mapRamToPage>B7</mapRamToPage>
          <useFlashRam>true</useFlashRam>
          <useInternalDataRam>true</useInternalDataRam>
          <useMaccRam>true</useMaccRam>

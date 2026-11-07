@@ -296,9 +296,12 @@ char *getsAlarm(char *s, size_t sz)
 {
 	rtc_t p;
 	uint8_t a = RTC_ACTRL;
+	const char *day;
 	p.flg = (1 << RID_ADOW) | (1 << RID_AHRS) | (1 << RID_AMIN) | (1 << RID_ASEC); 
 	getRTC(&p);
-	snprintf(s, sz, "%s. %2.2hu:%2.2hu:%2.2hu [%c%c%c%c%c]",dow[p.d.r.ADOW-1], p.d.r.AHRS, p.d.r.AMIN, p.d.r.ASEC
+	/* ADOW may be zero when only the seconds alarm is enabled. */
+	day = p.d.r.ADOW >= 1 && p.d.r.ADOW <= 7 ? dow[p.d.r.ADOW-1] : "--";
+	snprintf(s, sz, "%s. %2.2hu:%2.2hu:%2.2hu [%c%c%c%c%c]",day, p.d.r.AHRS, p.d.r.AMIN, p.d.r.ASEC
 		,(char)(a&ADOW_EN? 'W':'w'),(char)(a&AHRS_EN? 'H':'h'),(char)(a&AMIN_EN? 'M':'m'),(char)(a&ASEC_EN? 'S':'s')
 		,(char)(RTC_CTRL & (1 << 6)?'I':'i'));
 	return s;
@@ -343,7 +346,7 @@ char *getsDate(char *s, size_t sz)
 	if(chkRTCPowerLost())
 		snprintf(s,sz,"??. ?? ???. ????");
 	else
-		snprintf(s, sz,"%s. %2.2hu %s. %4.4hu", dow[p.d.r.DOW-1], p.d.r.DOM, mon[p.d.r.MON-1], p.d.r.CEN*100+p.d.r.YR+1970);
+		snprintf(s, sz,"%s. %2.2hu %s. %4.4hu", dow[p.d.r.DOW-1], p.d.r.DOM, mon[p.d.r.MON-1], p.d.r.CEN*100+p.d.r.YR);
 	return s;
 }
 

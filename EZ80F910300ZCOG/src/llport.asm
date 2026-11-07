@@ -16,10 +16,12 @@
 	xref _criticalcounter
 	
 	segment bss
-	xdef _cpmram
+	xdef _camel_ram, _camel_task_stack
 	ORG B80000h
 	align 10000h
-_cpmram: ds 10000h
+_camel_ram: ds 0E000h          ; Forth RAM dictionary
+_camel_task_stack: ds 3072    ; 1024 FreeRTOS StackType_t cells (24-bit)
+    ds 01400h               ; Forth return/leave stacks, PAD and HOLD
 	
     segment data
 

@@ -50,6 +50,7 @@ and kit windows, initially waiting for the ZDS debugger.
 | --- | --- |
 | UART0 | Startup, task and network diagnostics |
 | Host TCP 4040 | Emulator Ethernet Smart Cable debugger |
+| Guest UDP 4030 | FreeRTOS command console; `nc -u ez804040 4030`, then `help` |
 | Guest TCP 4040 | Firmware diagnostic console, independent of the host debugger |
 | Guest TCP 4050 | CP/M 2.2 console |
 | Guest UDP 4060 | SysInfo monitor; the first datagram starts output |

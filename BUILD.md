@@ -68,17 +68,49 @@ git -C uzlib apply ../patches/uzlib-6d60d65-zds.patch
 
 Do not blindly apply patches repeatedly or discard unrelated edits.
 
-## ZDS II 5.3.5
+## Build with VSCodium or the command line
 
-1. Open `EZ80F910300ZCOG.zdsproj`.
-2. Select **Debug** for the RAM application, or **Release** for internal/external flash.
-3. Run **Rebuild All**, then load the matching target.
+From the parent `qemuez80f91` checkout, use VSCodium's **FreeRTOS: Build** task
+or the Zilog command-line tools under Wine:
 
-The main project includes required kernel, IPv4/routing, TCP/IP and uzlib
-sources. Both configurations provide all include paths, thread and CP/M definitions.
-**Debug** uses the RAM target and retains `bin/EZ80F910300ZCOGd.*`.
-**Release** uses `eZ80F91_99C0879-AMD_Flash` and produces
-`Release/EZ80F910300ZCOG.hex`/`.lod`/`.map`:
+```sh
+python3 tools/firmware.py build --config Release
+python3 tools/firmware.py build --config Debug
+python3 tools/flash_firmware.py --config Release --build --stop --run
+```
+
+Both configurations start from flash. Their outputs are in
+`build/firmware/Release/` (`EZ80F910300ZCOG.*`) and
+`build/firmware/Debug/` (`EZ80F910300ZCOGd.*`), separate from this subproject.
+The main `.zdsproj` and its selected `.ztgt` remain shared build inputs.
+The command-line build does not require generated IDE makefiles or a `.wsp` session.
+See the parent checkout's `docs/vscodium.md` for configuration and backup details.
+
+The flash target enables ADL mode, maps external AM29LV008BB flash to
+`0x040000–0x13FFFF`, maps CS2 to `0x800000–0xBFFFFF` (including LED I/O),
+and places internal SRAM at `0xB7E000–0xB7FFFF`. CS3 stays disabled.
+
+## Build and debug with ZDS II 5.3.5
+
+ZDS II remains supported alongside VSCodium:
+
+1. Open `EZ80F910300ZCOG.zdsproj` in the IDE.
+2. Select **Debug** or **Release**; both use `eZ80F91_99C0942_Flash` and flash boot.
+3. Run **Rebuild All**. The IDE regenerates its build directories and makefiles.
+4. Connect the Ethernet Smart Cable target, load the matching LOD and run/debug.
+
+Debug writes `bin/EZ80F910300ZCOGd.hex`/`.lod`/`.map`, with intermediate files
+in `EZ80F910300ZCOG/Debug/`. Release writes `Release/EZ80F910300ZCOG.*`.
+These outputs are separate from `build/firmware/`, so both workflows can coexist.
+Opening the `.zdsproj` also recreates the local `.wsp` session; the previous
+session's window positions and debugger layout were removed during cleanup.
+
+
+External flash programming uses the explicitly selected `Am29LV008BB`;
+autoselection is disabled and the programmer base is `040000` (the CS0
+lower address, not its upper address). Check the linker map for RAM overflow
+warnings before loading a LOD. An out-of-range RAM vector section can surface
+as `ERR_DTLI_INVALID_TOKEN` because the underlying DTL memory write fails.
 
 - Internal flash: `0x000000–0x03FFFF` for program code and ordinary constants.
 - CP/M disks: separate writable A/B/C/D/I/J images behind a WD2797A
@@ -157,6 +189,31 @@ may be incomplete. Outputs reside in `EZ80F910300ZCOG/Debug/` and `bin/`.
 HEX, LOD, workspace and generated map files are ignored. Live tests must use
 the map matching the firmware actually loaded.
 
+## Firmware command console
+
+Both configurations start the FreeRTOS+CLI UDP server on guest port **4030**
+after the network comes up. Connect to the guest DHCP hostname/address, for example:
+
+```sh
+nc -u ez804040 4030
+```
+
+Enter `help` followed by Enter. Available commands include `ip-config`,
+`net-stats`, `ping`, `date`, `time`, `dump`, `ihex`, `echo-parameters` and
+`echo-3-parameters`. Commands are newline-terminated and limited to 59 characters.
+The server accepts CRLF, backspace and fragmented lines, rejects oversized lines,
+and discards unfinished input when a different client attaches.
+
+This command console is separate from the TCP diagnostic output on guest port
+4040, CP/M on TCP 4050, the UDP SysInfo display on 4060 and the host ZDS debugger.
+`FreeRTOS_CLI.c`/`.h` are vendored unchanged from the MIT-licensed official
+[FreeRTOS 202212.01 release](https://github.com/FreeRTOS/FreeRTOS/tree/202212.01/FreeRTOS-Plus/Source/FreeRTOS-Plus-CLI).
+The project includes the CLI core, existing application commands and the updated
+UDP transport directly, so no additional library setup is required.
+
+Both configurations currently use `eZ80F91_99C0942_Flash`. Rebuild after changing the target because
+startup memory configuration comes from linker-generated target symbols.
+
 ## FreeRTOS 11 port
 
 The port remains 24-bit ADL with `TickType_t=uint24_t`. Legacy
@@ -223,7 +280,8 @@ running firmware and its matching map/IP. See the
 For a complete freshly built board image:
 
 ```sh
-python3 scripts/ihex_to_bin.py subprojects/FreeRTOS-eZ80f91/bin/EZ80F910300ZCOGd.hex build/freertos-current.bin
+python3 tools/firmware.py build --config Release
+python3 scripts/ihex_to_bin.py build/firmware/Release/EZ80F910300ZCOG.hex build/freertos-current.bin
 python3 tests/test_freertos_network.py build/ez80/qemu-system-ez80 build/freertos-current.bin
 ```
 
@@ -234,3 +292,17 @@ Checks executed on 30 October 2026 include all five kernel scenarios with reset,
 the complete ZDS build, isolated networking, CP/M CRC/truncation/output-bound
 checks, uzlib upstream corpus/malformed inputs, compressor round-trip and
 fresh-clone/repeated dependency setup. Physical hardware remains unvalidated.
+
+
+## CAMEL24 in this workspace
+
+`EZ80F910300ZCOG.zdsproj` includes the CAMEL24 kernel sources from the sibling
+`../CAMELF91_24/asm` checkout. `CAMEL_FREERTOS` selects its task entry and private
+memory; `FLASH_BOOT` is enabled for both Debug and Release. Built-in dictionary
+words are linked into Flash. Runtime definitions use `B80000–B8DFFF`; the static
+FreeRTOS task stack occupies `B8E000–B8EBFF`. The remaining reserved bank contains
+Forth return/leave stacks and temporary buffers. It is excluded from heap_5.
+
+`camel_task.c` starts the interpreter at priority 2. The port console adapter
+waits with `vTaskDelay(1)` rather than reinitializing the board or scheduler.
+The standalone Kit ROM continues to build with `CAMEL_FREERTOS` undefined.

@@ -105,12 +105,12 @@ extern void shiftDisplay();
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-/* LED anode and cathode memory maped I/O pointers */
+/* LED anode and cathode memory-mapped I/O registers */
 #ifndef LEDMATRIX_ANODE
-#define LEDMATRIX_ANODE   (*(volatile unsigned char*)0x800000)  //Anode
+volatile unsigned char LEDMATRIX_ANODE _At 0x800000;  //Anode
 #endif
 #ifndef LEDMATRIX_CATHODE
-#define LEDMATRIX_CATHODE (*(volatile unsigned char*)0x800001)  //Cathode
+volatile unsigned char LEDMATRIX_CATHODE _At 0x800001;  //Cathode
 #endif
 
 

@@ -1,398 +1,241 @@
 ifdef CPM22
-	include CPM.INC
-	include HWC.INC
+; CP/M 2.2 BIOS: direct hardware ports, shared image/directory drives.
+    include CPM.INC
+    include HWC.INC
+    XDEF BOOT,WBOOT,CONST,CONIN,CONOUT,LISTN,PUNCH,READER
+    XDEF HOME,SELDSK,SETTRK,SETSEC,SETDMA,READ,WRITE,LISTST,SECTRN
+    XDEF HOSTBDOS,HOSTDISPATCH
+    XREF FBASE1
 
-	XDEF BOOT
-	XDEF WBOOT
-	XDEF CONST
-	XDEF CONIN
-	XDEF CONOUT
-	XDEF LISTN
-	XDEF PUNCH
-	XDEF READER
-	XDEF HOME
-	XDEF SELDSK
-	XDEF SETTRK
-	XDEF SETSEC
-	XDEF SETDMA
-	XDEF READ
-	XDEF WRITE
-	XDEF LISTST
-	XDEF SECTRN
+    define _BIOS,space=ram,org=BIOS
+    segment _BIOS
+    .assume adl=0
+BOOT:   JP _BOOT
+WBOOT:  JP _WBOOT
+CONST:  JP _CONST
+CONIN:  JP _CONIN
+CONOUT: JP _CONOUT
+LISTN:  JP _CONOUT
+PUNCH:  JP _CONOUT
+READER: JP _CONIN
+HOME:   JP _HOME
+SELDSK: JP _SELDSK
+SETTRK: JP _SETTRK
+SETSEC: JP _SETSEC
+SETDMA: JP _SETDMA
+READ:   JP _READ
+WRITE:  JP _WRITE
+LISTST: LD A,0FFh
+        RET
+SECTRN: LD H,B
+        LD L,C
+        RET
 
+_BOOT:
+    LD SP,080h
+    XOR A
+    OUT (HFSCMD),A
+    LD A,MB
+    OUT (HFSDAT),A
+    LD HL,CCP
+    LD A,L
+    OUT (HFSDAT),A
+    LD A,H
+    OUT (HFSDAT),A
+    XOR A
+    OUT (HFSDAT),A
+    LD A,8
+    OUT (HFSDAT),A
+    LD A,9
+    OUT (HFSCMD),A       ; Snapshot the 2-KiB CCP for warm starts.
+    XOR A
+    LD (IOBYTE),A
+    LD (CDISK),A
+    JR _GOCPM
+_WBOOT:
+    LD SP,080h
+    LD A,10
+    OUT (HFSCMD),A       ; Restore CCP without reading disk sectors.
+_GOCPM:
+    LD A,0C3h
+    LD (0),A
+    LD HL,WBOOT
+    LD (1),HL
+    LD (5),A
+    LD HL,BDOS
+    LD (6),HL
+    LD C,26
+    LD DE,080h
+    CALL HOSTBDOS
+    LD A,(CDISK)
+    LD C,A
+    JP CCP
 
-	define _BIOS,space=ram,org=BIOS
-	segment _BIOS
-	.assume adl=0
+_CONST:
+    IN A,(HCONSTA)
+    AND 1
+    RET Z
+    LD A,0FFh
+    RET
+_CONIN:
+    CALL _CONST
+    OR A
+    JR Z,_CONIN
+    IN A,(HCONDAT)
+    RET
+_CONOUT:
+    LD A,C
+    OUT (HCONDAT),A
+    RET
+_SELDSK:
+    LD A,C
+    LD (HOSTDRIVE),A
+    PUSH BC
+    PUSH DE
+    XOR A
+    OUT (HFSCMD),A
+    LD A,C
+    OUT (HFSDAT),A
+    LD A,11
+    OUT (HFSCMD),A
+    IN A,(HFSCMD)
+    OR A
+    LD HL,0
+    JR NZ,_SELECTED
+    LD HL,HOSTDPH
+_SELECTED:
+    POP DE
+    POP BC
+    RET
+_SETDMA:
+    LD (HOSTDMA),BC
+    PUSH BC
+    PUSH DE
+    LD D,B
+    LD E,C
+    LD C,26
+    CALL HOSTBDOS
+    POP DE
+    POP BC
+    RET
+_HOME:
+    LD BC,0
+_SETTRK:
+    LD (HOSTTRACK),BC
+    RET
+_SETSEC:
+    LD A,C
+    LD (HOSTSECTOR),A
+    RET
+_READ:
+    XOR A
+    JR _FDCIO
+_WRITE:
+    LD A,1
+_FDCIO:
+    LD (HOSTWRITE),A
+    PUSH BC
+    PUSH DE
+    PUSH HL
+    LD A,(HOSTDRIVE)
+    OUT (FDCDRV),A
+    LD A,(HOSTTRACK+1)
+    OUT (FDCTHI),A
+    LD A,(HOSTTRACK)
+    OUT (FDCDATA),A
+    LD A,010h
+    OUT (FDCSTAT),A
+    IN A,(FDCSTAT)
+    AND 098h
+    JR NZ,_FDCERROR
+    LD A,(HOSTSECTOR)
+    OUT (FDCSEC),A
+    LD A,(HOSTWRITE)
+    OR A
+    LD A,080h
+    JR Z,_FDCCOMMAND
+    LD A,0A0h
+_FDCCOMMAND:
+    OUT (FDCSTAT),A
+    LD HL,(HOSTDMA)
+    LD B,128
+_FDCBYTE:
+    IN A,(FDCREQ)
+    AND 1
+    JR Z,_FDCERROR
+    LD A,(HOSTWRITE)
+    OR A
+    JR NZ,_FDCWRBYTE
+    IN A,(FDCDATA)
+    LD (HL),A
+    JR _FDCNEXT
+_FDCWRBYTE:
+    LD A,(HL)
+    OUT (FDCDATA),A
+_FDCNEXT:
+    INC HL
+    DJNZ _FDCBYTE
+    IN A,(FDCSTAT)
+    AND 0D8h
+    JR NZ,_FDCERROR
+    XOR A
+    JR _FDCRETURN
+_FDCERROR:
+    LD A,1
+_FDCRETURN:
+    POP HL
+    POP DE
+    POP BC
+    RET
 
-NSECTS	EQU	(BIOS-CCP+127)/128	;warm start sector count
-;
-;	jump vector for individual subroutines
-;
-BOOT:		JP	_BOOT		;cold start
-WBOOT:	JP	_WBOOT		;warm start
-CONST:		JP	_CONST		;console status
-CONIN:		JP	_CONIN		;console character in
-CONOUT:	JP	_CONOUT		;console character out
-LISTN:		JP	_LISTN		;list character out
-PUNCH:		JP	_PUNCH		;punch character out
-READER:	JP	_READER		;reader character out
-HOME:		JP	_HOME		;move head to home position
-SELDSK:	JP	_SELDSK		;select disk
-SETTRK:	JP	_SETTRK		;set track number BC
-SETSEC:	JP	_SETSEC		;set sector number
-SETDMA:	JP	_SETDMA		;set dma address
-READ:		JP	_READ		;read disk
-WRITE:		JP	_WRITE		;write disk
-LISTST:		JP	_LISTST		;return list status
-SECTRN:	JP	_SECTRN		;sector translate
-;
-;	fixed data tables for four-drive standard
-;	IBM-compatible 8" disks
-;
-;	disk parameter header for disk 00
-DPBASE:	DW	TRANS,0000H
-	DW	0000H,0000H
-	DW	DIRBF,DPBLK
-	DW	CHK00,ALL00
-;	disk parameter header for disk 01
-	DW	TRANS,0000H
-	DW	0000H,0000H
-	DW	DIRBF,DATBLK
-	DW	CHK01,ALL01
-;	disk parameter header for disk 02
-	DW	TRANS,0000H
-	DW	0000H,0000H
-	DW	DIRBF,DATBLK
-	DW	CHK02,ALL02
-;	disk parameter header for disk 03
-	DW	TRANS,0000H
-	DW	0000H,0000H
-	DW	DIRBF,DATBLK
-	DW	CHK03,ALL03
-;
-;	sector translate vector for the IBM 8" disks
-;
-TRANS:	DB	1,7,13,19	;sectors 1,2,3,4
-	DB	25,5,11,17	;sectors 5,6,7,8
-	DB	23,3,9,15	;sectors 9,10,11,12
-	DB	21,2,8,14	;sectors 13,14,15,16
-	DB	20,26,6,12	;sectors 17,18,19,20
-	DB	18,24,4,10	;sectors 21,22,23,24
-	DB	16,22		;sectors 25,26
-;
-;	disk parameter block, common to all IBM 8" disks
-;
-DPBLK:  DW	26		;sectors per track
-	DB	3		;block shift factor
-	DB	7		;block mask
-	DB	0		;extent mask
-	DW	242		;disk size-1
-	DW	63		;directory max
-	DB	192		;alloc 0
-	DB	0		;alloc 1
-	DW	16		;check size
-	DW	2		;track offset
-;
-DATBLK: DW 26
-    DB 3,7,0
-    DW 249,63
-    DB 192,0
-    DW 16,0
-;
-;	fixed data tables for 4MB harddisk
-;
-;	disk parameter header drive 8 = I
-HDBASE:
-	DW	HDTRA,0000H
-	DW	0000H,0000H
-	DW	DIRBF,HDBLK
-	DW	CHKHD8,ALLHD8
+; C=function, DE=FCB or argument. Return HL and A=L, B=H as CP/M BDOS does.
+; The port packet also supplies MBASE and BIOS-owned scratch space.
+HOSTDISPATCH:
+    LD A,C
+    CP 13
+    JP C,FBASE1
+    CP 41
+    JP NC,FBASE1
+HOSTBDOS:
+    XOR A
+    OUT (HFSCMD),A
+    LD A,C
+    OUT (HFSDAT),A
+    LD A,E
+    OUT (HFSDAT),A
+    LD A,D
+    OUT (HFSDAT),A
+    LD A,MB
+    OUT (HFSDAT),A
+    LD HL,HOSTSCRATCH
+    LD A,L
+    OUT (HFSDAT),A
+    LD A,H
+    OUT (HFSDAT),A
+    LD A,1
+    OUT (HFSCMD),A
+    IN A,(HFSDAT)
+    LD L,A
+    IN A,(HFSDAT)
+    LD H,A
+    LD A,L
+    LD B,H
+    RET
 
-;	disk parameter header drive 9 = J
-HDBAS9:
-	DW	HDTRA,0000H
-	DW	0000H,0000H
-	DW	DIRBF,HDBLK
-	DW	CHKHD9,ALLHD9
-;
-;	sector translate vector for the hardisk
-;
-HDTRA: DB 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
-    DB 17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32
-;
-HDBLK: ; cpmtools 4mb-hd / p2dos
+HOSTDPH:
+    DW 0,0,0,0,HOSTDIR,HOSTDPB,0,HOSTSCRATCH
+HOSTDPB:
     DW 32
     DB 4,15,0
     DW 2047,255
     DB 240,0
     DW 0,0
-;
-;	end of fixed tables
-;
-;	individual subroutines to perform each function
-;	simplest case is to just perform parameter initialization
-;
-_BOOT:	LD		SP,80H		;use space below buffer for stack
-		CALL	intro
-		DB		"64K CP/M Vers. 2.2 / CBIOS V1.5"
-		DB		CR,LF
-		DB		"eZ80 port (C)1998-2023 by Juergen Sievers"
-		DB		CR,LF,0
-intro:	POP		HL
-BOOTL:  LD		A,(HL)
-		OR		A
-		JR		Z,BOOTC
-		LD		C,A
-		CALL	CONOUT
-		INC		HL
-		JR		BOOTL
-BOOTC:  LD		(IOBYTE),A	;clear the iobyte
-		LD		(CDISK),A	;select disk zero
-		LD		C,A
-		CALL	SELDSK
-     	LD		D,OSSECN	; sectors to load CCP&BDOS
-		JR		LOADCPM		;initialize and go to cp/m
-
-;
-;	simplest case is to read the disk until all sectors loaded
-;
-_WBOOT:
-		LD	SP,128				; use space below buffer for stack
-		LD	D,CCPSECN			; sectors to load CCP
-LOADCPM:
-		XOR		A				; select drive A
-		LD		HL,0			; HL=0 IBM 3740 default dph
-		EXBIOS  FDIO, PORTOUT, FDCD	; select drive a
-		EXBIOS  FDIO, PORTINP, FDCST  ; get status of fdc
-
-		LD      HL,CCPSEC       ; h=track 0, l=sector 2
-		LD      IX,CCP          ; base transfer address
-
-		OR		A				; selected?
-		JR		Z,LSECT			; yes read system
-EXMON:	EXBIOS  MONITOR, PORTOUT, 0	; build-in monitor
-
-;
-;       load the next sector
-;
-NEXTS:
-		ADD		IX,SP           ; 128 bytes per sector
-		INC     L               ; sector = sector + 1
-		LD      A,L
-		CP      27              ; last sector of track ?
-		JR      C,LSECT         ; no, go read another
-;
-;       end of track, increment to next track
-;
-		LD      L,1             ; sector = 2
-		INC     H               ; track = track + 1
-		JR      LSECT           ; for another group
-
-
-LSECT: 	XOR     A
-		LD		B,A
-		LD		C,H				; set track
-		EXBIOS  FDIO, PORTOUT, FDCTBC
-		LD      C,L             ; set sector
-		EXBIOS  FDIO, PORTOUT, FDCSBC
-		PUSH	IX
-		POP		BC				; set dma
-		EXBIOS  DMAIO, PORTOUT, DMABC
-		EXBIOS  FDIO, PORTOUT, FDCOP	; a=0 => read sector
-		EXBIOS  FDIO, PORTINP, FDCST  ; get status of fdc
-		OR      A               ; read successful ?
-		JR      NZ,EXMON		; no, start buildin monitor
-		DEC     D               ; sects=sects-1
-		JR      NZ,NEXTS        ; head for the bios
-
-;	end of load operation, set parameters and go to cp/m
-
-GOCPM:
-	LD	A,0C3H		;c3 is a jmp instruction
-	LD	(0),A		;for jmp to wboot
-	LD	HL,WBOOT	;wboot entry point
-	LD	(1),HL		;set address field for jmp at 0
-;
-	LD	(5),A		;for jmp to bdos
-	LD	HL,BDOS		;bdos entry point
-	LD	(6),HL		;address field of jump at 5 to bdos
-;
-	LD	BC,80H		;default dma address is 80h
-	CALL	SETDMA
-;
-	LD	A,(CDISK)	;get current disk number
-	LD	C,A		;send to the ccp
-	JP	CCP		;go to cp/m for further processing
-;
-;
-;	simple i/o handlers
-;
-;	console status, return 0ffh if character ready, 00h if not
-;
-_CONST:
-	EXBIOS CONIO, PORTINP, CONSTA	;get console status
-	RET
-;
-;	console character into register a
-;
-
-_CONIN:
-	EXBIOS CONIO, PORTINP, CONDAT	;get character from console
-	OR	A
-;	RET Z
-;	OUT (CONDAT),A		; echo back
-	RET
-;
-;	console character output from register c
-;
-_CONOUT:
-	LD	A,C		;get to accumulator
-	EXBIOS	CONIO, PORTOUT, CONDAT	;send character to console
-	RET
-;
-;	list character from register c
-;
-_LISTN:
-	LD	A,C		;character to register a
-	EXBIOS	CONIO, PORTOUT, PRTDAT
-	RET
-;
-;	return list status (0 if not ready, 0xff if ready)
-;
-_LISTST:
-	EXBIOS	CONIO, PORTINP, PRTSTA
-	RET
-;
-;	punch character from register c
-;
-_PUNCH:
-	LD	A,C		;character to register a
-	EXBIOS	CONIO, PORTOUT, AUXDAT
-	RET
-;
-;	read character into register a from reader device
-;
-_READER:
-	EXBIOS	CONIO, PORTINP, AUXDAT
-	RET
-;
-;
-;	i/o drivers for the disk follow
-;
-;	move to the track 00 position of current drive
-;	translate this call into a settrk call with parameter 00
-;
-_HOME:
-	LD	BC,0		;select track 0
-	JP	SETTRK		;we will move to 00 on first read/write
-;
-;	select disk given by register C
-;
-_SELDSK:LD	B,E
-	LD	HL,0000H	;error return code
-	LD	A,C
-	CP	4		;must be between 0 and 3
-	JR	NC,SELHD	;no carry if 4,5,...
-;	disk number is in the proper range
-;	compute proper disk parameter header address
-	LD	L,A			;L=disk number 0,1,2,3
-	ADD	HL,HL		;*2
-	ADD	HL,HL		;*4
-	ADD	HL,HL		;*8
-	ADD	HL,HL		;*16 (size of each header)
-	LD	DE,DPBASE
-	ADD	HL,DE		;HL=.dpbase(diskno*16)
-	JR  	SEL
-
-SELHD:	LD	E,B
-	CP	8		;select the harddisk?
-	JR	NZ,HD9
-	LD 	HL,HDBASE
-	JR	SEL
-HD9:	CP 	9
-	RET 	NZ		; not HD I,J (8 or 9)
-	LD	HL,HDBAS9	;HL=hdbase for harddisk
-SEL:	EXBIOS	FDIO, PORTOUT, FDCD	;select disk drive c 0..4,8,9 I,J
-	RET
-;
-;	set track given by register bc
-;
-_SETTRK:
-	EXBIOS	FDIO, PORTOUT, FDCTBC
-	RET
-;
-;	set sector given by register bc
-;
-_SETSEC:
-	EXBIOS	FDIO, PORTOUT, FDCSBC
-	RET
-;
-;	translate the sector given by BC using the
-;	translate table given by DE
-;
-_SECTRN:
-	EX	DE,HL		;HL=.trans
-	ADD	HL,BC		;HL=.trans(sector)
-	LD	L,(HL)		;L = trans(sector)
-	LD	H,0		;HL= trans(sector)
-	RET			;with value in HL
-;
-;	set dma address given by registers bc
-;
-_SETDMA:
-	EXBIOS	DMAIO, PORTOUT, DMABC	;in dma
-	RET
-;
-;	perform read operation
-;
-_READ:
-	XOR	A		;read command -> A
-	JP	WAITIO		;to perform the actual i/o
-;
-;	perform a write operation
-;
-_WRITE:
-	LD	A,1		;write command -> A
-;
-;	enter here from read and write to perform the actual i/o
-;	operation.  return a 00h in register a if the operation completes
-;	properly, and 01h if an error occurs during the read or write
-;
-;	in this case, we have saved the disk number  'diskno' (0-3)
-;			the track number in 'track' (0-76)
-;			the sector number in 'sector' (1-26)
-;			the dma address in 'dmaad' (0-65535)
-;
-WAITIO: EXBIOS	FDIO, PORTOUT, FDCOP	;start i/o operation
-	EXBIOS	FDIO, PORTINP, FDCST	;status of i/o operation -> A
-	RET
-;
-;	the remainder of the CBIOS is reserved uninitialized
-;	data area, and does not need to be a part of the
-;	system memory image (the space must be available,
-;	however, between "begdat" and "enddat").
-;
-;	scratch ram area for BDOS use
-;
-BEGDAT:	EQU	$		;beginning of data area
-
-DIRBF:	DS	128		;scratch directory area
-ALL00:	DS	31		;allocation vector 0
-ALL01:	DS	32		;allocation vector 1
-ALL02:	DS	32		;allocation vector 2
-ALL03:	DS	32		;allocation vector 3
-ALLHD8:	DS	256		;allocation vector harddisk 8 I
-ALLHD9:	DS	256		;allocation vector harddisk 9 J
-CHK00:	DS	16		;check vector 0
-CHK01:	DS	16		;check vector 1
-CHK02:	DS	16		;check vector 2
-CHK03:	DS	16		;check vector 3
-CHKHD8:	DS	1		;check vector harddisk 8 I
-CHKHD9:	DS	1		;check vector harddisk 9 J
-;
-EDAT:	EQU	$		;end of data area
-
-_BIOSEND	equ $
-endif ; ifdef CPM22
-	END	;of BIOS
+HOSTDIR: DS 128
+HOSTSCRATCH: DS 272
+HOSTDRIVE: DB 0
+HOSTTRACK: DW 0
+HOSTSECTOR: DB 1
+HOSTDMA: DW 080h
+HOSTWRITE: DB 0
+endif
+    END

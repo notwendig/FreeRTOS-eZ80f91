@@ -9,6 +9,8 @@
 #include "semphr.h"
 #include "FreeRTOS_IP.h"
 #include "console.h"
+#include "camel_task.h"
+#include "UDPCommandInterpreter.h"
 #include "tty.h"
 #include "stdio.h"
 #include "String.h"
@@ -19,7 +21,6 @@
 #include "time.h"
 
 #include "_ez80.h"
-#include "uzlib.h"
 //#include "CPM22_A.h"
 
 #ifndef  _MULTI_THREAD
@@ -34,17 +35,14 @@ static const uint8_t ucDNSServerAddress[ 4 ] = { 0,0,0,0 };
 static const uint8_t ucMACAddress[ 6 ] = {0x00,0x90,0x23,0x00,0x01,0x02}; // 00:90:23:00:01:02
 const char *hostname = "ez80";
 //void vStartTCPCommandInterpreterTask( uint16_t usStackSize, uint32_t ulPort, UBaseType_t uxPriority );
-//void vStartUDPCommandInterpreterTask( uint16_t usStackSize, uint32_t ulPort, UBaseType_t uxPriority );
-//void vRegisterCLICommands( void );
+void vRegisterCLICommands( void );
 
 //void loadcpm(char *mem);
-extern uint8_t cpmram;
 
 
-TaskHandle_t hndlA,hndlB,hndlC,hndlD,hndlCPM;
+TaskHandle_t hndlA,hndlB,hndlC,hndlD;
 uint8_t volatile last=sizeof(size_t);
 
-void prvTCPCpmIOTask( void *ram );
 
 void PutchThread(void *arg)
 {
@@ -88,7 +86,7 @@ void TaskLED( void *pvParameters )
 	#define LINESZ 120
     TickType_t ticks = (int)pvParameters;
 	char *line5x7 = pvPortMalloc(LINESZ+1);
-	dir_e dir = SHIFT_RIGHT;
+	dir_e dir = SHIFT_NONE;
 	int idx;
 	
 	while(1)
@@ -155,15 +153,16 @@ int main(int argc, void *argv[])
 //	vStartNTPTask( 2048, 4 );
 	res = xTaskCreate(PutchThread, "PutchThreadA", 2048, (void*)'A', 2, &hndlA);
 	res = xTaskCreate(PutchThread, "PutchThreadB", 2048, (void*)'B', 3, &hndlB);
-//	vRegisterCLICommands();
-//	vStartUDPCommandInterpreterTask( 1024, CGI_PORT, 3 );
+	vRegisterCLICommands();
+	vStartUDPCommandInterpreterTask( 1024, CGI_PORT, 3 );
 	res = xTaskCreate( sysinfo, "SysInfo", configMINIMAL_STACK_SIZE*5, (void *)portMAX_DELAY, 3, NULL);
 
 
 	res = xTaskCreate(StressThread, "StressThreadA", 2048, (void*)5, 3, &hndlC);
 	res = xTaskCreate(StressThread, "StressThreadB", 2048, (void*)6, 4, &hndlD);
-	res = xTaskCreate(prvTCPCpmIOTask,"CPM22",2048,&cpmram,4,&hndlCPM);
 
+	res = startCamel24();
+	configASSERT(res == pdPASS);
 	vTaskStartScheduler();
  
 	return res;
