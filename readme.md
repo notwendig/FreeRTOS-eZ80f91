@@ -1,5 +1,8 @@
 # FreeRTOS-eZ80f91
 
+[Deutsch](README.de.md)
+
+
 FreeRTOS port and demonstration application for the **Zilog eZ80F91** and
 EZ80F910300ZCOG development kit. It combines preemptive tasks, UART0,
 Ethernet/DHCP, CP/M 2.2 drive storage, buttons and a scrolling 5×7 LED matrix.
